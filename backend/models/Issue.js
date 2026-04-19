@@ -29,7 +29,7 @@ const issueSchema = mongoose.Schema(
       default: 1,
     },
     assignee: {
-      type: ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
   },

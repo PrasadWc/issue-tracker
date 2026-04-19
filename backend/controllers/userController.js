@@ -60,7 +60,15 @@ module.exports = {
         }
 
         const users = await User.create(usersToCreate);
-        return res.status(201).json(users);
+
+        // Remove passwords from response
+        const usersResponse = users.map((user) => {
+          const userObj = user.toObject();
+          delete userObj.password;
+          return userObj;
+        });
+
+        return res.status(201).json(usersResponse);
       }
 
       // Single create
@@ -96,8 +104,8 @@ module.exports = {
     try {
       const { email, password } = req.body;
 
-      // Find user by email
-      const user = await User.findOne({ email });
+      // Find user by email (include password for comparison)
+      const user = await User.findOne({ email }).select("+password");
 
       if (user && (await user.matchPassword(password))) {
         res.json({
