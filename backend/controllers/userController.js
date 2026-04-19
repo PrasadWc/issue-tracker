@@ -7,7 +7,19 @@ module.exports = {
   // @route   GET /api/users
   getUsers: async (req, res) => {
     try {
-      const result = await paginate(User, {}, req.query);
+      const { searchKey, role, status } = req.query;
+      let filter = {};
+
+      if (role) filter.role = role;
+      if (status) filter.status = status;
+      if (searchKey) {
+        filter.$or = [
+          { name: { $regex: searchKey, $options: "i" } },
+          { email: { $regex: searchKey, $options: "i" } },
+        ];
+      }
+
+      const result = await paginate(User, filter, req.query);
       res.status(200).json(result);
     } catch (error) {
       res.status(500).json({ message: error.message });
