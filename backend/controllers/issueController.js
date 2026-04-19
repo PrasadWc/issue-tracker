@@ -1,11 +1,13 @@
 const Issue = require("../models/Issue");
+const paginate = require("../utils/pagination");
+
 module.exports = {
   // @desc    Get all issues
   // @route   GET /api/issues
   getIssues: async function (req, res) {
     try {
-      const issues = await Issue.find();
-      res.status(200).json(issues);
+      const result = await paginate(Issue, {}, req.query);
+      res.status(200).json(result);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
