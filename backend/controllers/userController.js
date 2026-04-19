@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const paginate = require("../utils/pagination");
+const generateToken = require("../utils/generateToken");
 
 module.exports = {
   // @desc    Get all users
@@ -12,6 +13,7 @@ module.exports = {
       res.status(500).json({ message: error.message });
     }
   },
+
   // @desc    Get user by ID
   // @route   GET /api/users/:id
   getUser: async (req, res) => {
@@ -22,28 +24,118 @@ module.exports = {
       res.status(500).json({ message: error.message });
     }
   },
-  // @desc    Create user
-  // @route   POST /api/users
-  createUser: async (req, res) => {
+
+  // @desc    Get current user profile
+  // @route   GET /api/users/me
+  // @access  Private
+  getMe: async (req, res) => {
     try {
-      const user = await User.create(req.body);
-      res.status(201).json(user);
+      res.status(200).json(req.user);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
   },
+  // @desc    Register new user
+  // @route   POST /api/users
+  createUser: async (req, res) => {
+    try {
+      if (Array.isArray(req.body)) {
+        // Bulk create (Tokens not usually returned for bulk)
+        const usersToCreate = req.body.map((user) => ({
+          name: user.name,
+          email: user.email,
+          password: user.password,
+          status: user.status,
+          role: user.role,
+        }));
+
+        if (
+          usersToCreate.some(
+            (user) => !user.name || !user.email || !user.password,
+          )
+        ) {
+          return res.status(400).json({
+            message: "Name, email, and password are required for all users",
+          });
+        }
+
+        const users = await User.create(usersToCreate);
+        return res.status(201).json(users);
+      }
+
+      // Single create
+      const { name, email, password, status, role } = req.body;
+      if (!name || !email || !password) {
+        return res.status(400).json({
+          message: "Name, email, and password are required",
+        });
+      }
+
+      // Check if user exists
+      const userExists = await User.findOne({ email });
+      if (userExists) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      const user = await User.create({ name, email, password, status, role });
+
+      res.status(201).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        token: generateToken(user._id),
+      });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  // @desc    Authenticate user & get token
+  // @route   POST /api/users/login
+  loginUser: async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      // Find user by email
+      const user = await User.findOne({ email });
+
+      if (user && (await user.matchPassword(password))) {
+        res.json({
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          token: generateToken(user._id),
+        });
+      } else {
+        res.status(401).json({ message: "Invalid email or password" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+
   // @desc    Update user
   // @route   PUT /api/users/:id
   updateUser: async (req, res) => {
     try {
-      const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-        new: true,
+      const user = await User.findById(req.params.id);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Update fields
+      Object.keys(req.body).forEach((key) => {
+        user[key] = req.body[key];
       });
-      res.status(200).json(user);
+
+      const updatedUser = await user.save();
+      res.status(200).json(updatedUser);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
   },
+
   // @desc    Soft delete user (set status to inactive)
   // @route   PUT /api/users/:id/soft
   softDeleteUser: async (req, res) => {
@@ -61,6 +153,7 @@ module.exports = {
       res.status(500).json({ message: error.message });
     }
   },
+
   // @desc    Hard delete user (permanent)
   // @route   DELETE /api/users/:id/hard
   hardDeleteUser: async (req, res) => {

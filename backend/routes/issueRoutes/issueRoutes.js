@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { protect } = require("../../middleware/authMiddleware");
 const {
   getIssues,
   getIssue,
@@ -7,6 +8,9 @@ const {
   updateIssue,
   deleteIssue,
 } = require("../../controllers/issueController");
+
+// Protect all routes
+router.use(protect);
 
 router.get("/", getIssues);
 router.get("/:id", getIssue);
