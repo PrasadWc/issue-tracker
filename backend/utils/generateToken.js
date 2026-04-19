@@ -5,8 +5,8 @@ const jwt = require("jsonwebtoken");
  * @param {string} id - User ID
  * @returns {string} Signed JWT token
  */
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+const generateToken = (id, role) => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
     expiresIn: "24h",
   });
 };
