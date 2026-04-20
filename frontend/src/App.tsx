@@ -1,36 +1,17 @@
+import { useMemo } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
+import { CssBaseline, ThemeProvider } from "@mui/material";
+import { useThemeStore } from "./store/useThemeStore";
+import getTheme from "./theme";
 import Layout from "./components/Layout";
 import AuthPage from "./pages/AuthPage";
 import IssuesPage from "./pages/IssuesPage";
 import UsersPage from "./pages/UsersPage";
 
-const theme = createTheme({
-  palette: {
-    mode: "dark",
-    primary: {
-      main: "#90caf9",
-    },
-    secondary: {
-      main: "#f48fb1",
-    },
-    background: {
-      default: "#0a1929",
-      paper: "#132f4c",
-    },
-  },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-    h4: {
-      fontWeight: 700,
-    },
-  },
-  shape: {
-    borderRadius: 8,
-  },
-});
+const AppContent = () => {
+  const mode = useThemeStore((state) => state.mode);
+  const theme = useMemo(() => getTheme(mode), [mode]);
 
-function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -64,6 +45,10 @@ function App() {
       </BrowserRouter>
     </ThemeProvider>
   );
+};
+
+function App() {
+  return <AppContent />;
 }
 
 export default App;
