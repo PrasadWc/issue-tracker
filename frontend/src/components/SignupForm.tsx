@@ -3,9 +3,13 @@ import { Box, Button, TextField, Typography } from "@mui/material";
 const SignupForm = () => {
   return (
     <Box component="form" sx={{ mt: 1 }}>
-      <Typography variant="h5" align="center" gutterBottom>
-        Sign Up
+      <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+        Create Account
       </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+        Join our community and start tracking your issues
+      </Typography>
+
       <TextField
         margin="normal"
         required
@@ -15,6 +19,11 @@ const SignupForm = () => {
         name="name"
         autoComplete="name"
         autoFocus
+        slotProps={{
+          input: {
+            sx: { borderRadius: "10px" },
+          },
+        }}
       />
       <TextField
         margin="normal"
@@ -24,6 +33,11 @@ const SignupForm = () => {
         label="Email Address"
         name="email"
         autoComplete="email"
+        slotProps={{
+          input: {
+            sx: { borderRadius: "10px" },
+          },
+        }}
       />
       <TextField
         margin="normal"
@@ -33,8 +47,29 @@ const SignupForm = () => {
         label="Password"
         type="password"
         id="password"
+        slotProps={{
+          input: {
+            sx: { borderRadius: "10px" },
+          },
+        }}
       />
-      <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
+      <Button
+        type="submit"
+        fullWidth
+        variant="contained"
+        sx={{
+          mt: 4,
+          mb: 2,
+          height: 54,
+          borderRadius: "12px",
+          fontSize: "1rem",
+          fontWeight: 600,
+          boxShadow: (t) =>
+            t.palette.mode === "dark"
+              ? "0 8px 16px rgba(144, 202, 249, 0.2)"
+              : "0 8px 16px rgba(25, 118, 210, 0.2)",
+        }}
+      >
         Sign Up
       </Button>
     </Box>
