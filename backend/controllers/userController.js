@@ -168,9 +168,6 @@ module.exports = {
   // @route   DELETE /api/users/:id
   deleteUser: async (req, res) => {
     try {
-      if (req.user.role !== 1) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
       if (req.user.id === req.params.id) {
         return res.status(400).json({ message: "You cannot delete yourself" });
       }
