@@ -23,6 +23,7 @@ import issueService, {
   type Issue,
   IssueStatus,
   IssuePriority,
+  IssueSeverity,
 } from "../services/issueService";
 
 const statusMap: Record<number, string> = {
@@ -37,7 +38,20 @@ const priorityMap: Record<number, string> = {
   [IssuePriority.High]: "High",
 };
 
+const severityMap: Record<number, string> = {
+  [IssueSeverity.Low]: "Low",
+  [IssueSeverity.Medium]: "Medium",
+  [IssueSeverity.High]: "High",
+};
+
 const priorityColors: Record<string, "error" | "warning" | "info" | "default"> =
+  {
+    High: "error",
+    Medium: "warning",
+    Low: "info",
+  };
+
+const severityColors: Record<string, "error" | "warning" | "info" | "default"> =
   {
     High: "error",
     Medium: "warning",
@@ -46,6 +60,7 @@ const priorityColors: Record<string, "error" | "warning" | "info" | "default"> =
 
 const IssuesPage = () => {
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -53,13 +68,15 @@ const IssuesPage = () => {
 
   useEffect(() => {
     fetchIssues();
-  }, []);
+  }, [page, rowsPerPage]);
 
   const fetchIssues = async () => {
     try {
       setLoading(true);
-      const data = await issueService.getIssues();
-      setIssues(data);
+      // Backend uses 1-based indexing for pages
+      const res = await issueService.getIssues(page + 1, rowsPerPage);
+      setIssues(res.data);
+      setTotal(res.total);
       setError(null);
     } catch (err: any) {
       console.error("Error fetching issues:", err);
@@ -171,9 +188,10 @@ const IssuesPage = () => {
               }}
             >
               <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Priority</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Severity</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Assigned To</TableCell>
               </TableRow>
@@ -181,7 +199,7 @@ const IssuesPage = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <Typography variant="body2" color="text.secondary">
                       Loading issues...
                     </Typography>
@@ -189,7 +207,7 @@ const IssuesPage = () => {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <Typography variant="body2" color="error">
                       {error}
                     </Typography>
@@ -197,60 +215,76 @@ const IssuesPage = () => {
                 </TableRow>
               ) : issues.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <Typography variant="body2" color="text.secondary">
                       No issues found.
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                issues
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((issue) => (
-                    <TableRow
-                      key={issue._id}
-                      hover
-                      sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                issues.map((issue) => (
+                  <TableRow
+                    key={issue._id}
+                    hover
+                    sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                  >
+                    <TableCell sx={{ fontWeight: 600 }}>
+                      {issue.title}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        maxWidth: 300,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        color: "text.secondary",
+                      }}
                     >
-                      <TableCell
-                        sx={{ fontWeight: 500, color: "text.secondary" }}
-                      >
-                        {issue._id
-                          .substring(issue._id.length - 6)
-                          .toUpperCase()}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600 }}>
-                        {issue.title}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={priorityMap[issue.priority]}
-                          color={priorityColors[priorityMap[issue.priority]]}
-                          size="small"
-                          sx={{
-                            fontWeight: 600,
-                            borderRadius: "6px",
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={statusMap[issue.status]}
-                          variant="outlined"
-                          size="small"
-                          sx={{
-                            fontWeight: 500,
-                            borderRadius: "6px",
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ color: "text.secondary" }}>
-                        {typeof issue.assignee === "object"
-                          ? issue.assignee.name
-                          : issue.assignee || "Unassigned"}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                      {issue.description}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={priorityMap[issue.priority]}
+                        color={priorityColors[priorityMap[issue.priority]]}
+                        size="small"
+                        sx={{
+                          fontWeight: 600,
+                          borderRadius: "6px",
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={severityMap[issue.severity]}
+                        color={severityColors[severityMap[issue.severity]]}
+                        size="small"
+                        sx={{
+                          fontWeight: 600,
+                          border: "none",
+                          borderRadius: "6px",
+                          bgcolor: (t: any) =>
+                            `${t.palette[severityColors[severityMap[issue.severity]] || "primary"].main}15`,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={statusMap[issue.status]}
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                          fontWeight: 500,
+                          borderRadius: "6px",
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ color: "text.secondary" }}>
+                      {typeof issue.assignee === "object"
+                        ? issue.assignee.name
+                        : issue.assignee || "Unassigned"}
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
@@ -258,7 +292,7 @@ const IssuesPage = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={issues.length}
+          count={total}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}

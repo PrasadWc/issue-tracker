@@ -58,8 +58,8 @@ const UsersPage = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const data = await userService.getUsers();
-      setUsers(data);
+      const res = await userService.getUsers();
+      setUsers(res.data);
       setError(null);
     } catch (err: any) {
       console.error("Error fetching users:", err);

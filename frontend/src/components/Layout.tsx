@@ -11,6 +11,8 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  Avatar,
+  Tooltip,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import BugReportIcon from "@mui/icons-material/BugReport";
@@ -21,6 +23,7 @@ import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useThemeStore } from "../store/useThemeStore";
+import { useAuthStore } from "../store/useAuthStore";
 import { useTheme } from "@mui/material/styles";
 
 const DRAWER_WIDTH = 260;
@@ -33,6 +36,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const theme = useTheme();
   const toggleColorMode = useThemeStore((state) => state.toggleMode);
+  const { user, logout } = useAuthStore();
 
   const handleDrawerToggle = () => {
     if (window.innerWidth < theme.breakpoints.values.sm) {
@@ -40,6 +44,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     } else {
       setOpen(!open);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/auth");
   };
 
   const menuItems = [
@@ -122,7 +131,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <Box sx={{ px: open ? 2 : 1, pb: 3, transition: "padding 0.2s" }}>
         <ListItem disablePadding sx={{ display: "block" }}>
           <ListItemButton
-            onClick={() => navigate("/auth")}
+            onClick={handleLogout}
             sx={{
               minHeight: 48,
               justifyContent: open ? "initial" : "center",
@@ -130,7 +139,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               borderRadius: "12px",
               color: "error.main",
               "&:hover": {
-                bgcolor: "error.lighter",
+                bgcolor: (t) =>
+                  t.palette.mode === "dark"
+                    ? "rgba(239, 68, 68, 0.08)"
+                    : "rgba(239, 68, 68, 0.04)",
               },
             }}
           >
@@ -220,6 +232,35 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <Brightness4Icon />
             )}
           </IconButton>
+
+          {user && (
+            <Box sx={{ display: "flex", alignItems: "center", ml: 1 }}>
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ mx: 2, height: 24, my: "auto" }}
+              />
+              <Tooltip title={user.name}>
+                <Avatar
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    bgcolor: "primary.main",
+                    fontSize: "0.9rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    border: "2px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  {user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </Avatar>
+              </Tooltip>
+            </Box>
+          )}
         </Toolbar>
       </AppBar>
 

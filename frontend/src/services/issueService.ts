@@ -1,4 +1,4 @@
-import apiClient from "./apiClient";
+import apiClient, { type PaginatedResponse } from "./apiClient";
 
 export const IssueStatus = {
   Open: 1,
@@ -48,8 +48,10 @@ export interface CreateIssueData {
 export interface UpdateIssueData extends Partial<CreateIssueData> {}
 
 const issueService = {
-  getIssues: async () => {
-    const response = await apiClient.get<Issue[]>("/issues");
+  getIssues: async (page = 1, limit = 10) => {
+    const response = await apiClient.get<PaginatedResponse<Issue>>("/issues", {
+      params: { page, limit },
+    });
     return response.data;
   },
 

@@ -7,40 +7,68 @@ import Layout from "./components/Layout";
 import AuthPage from "./pages/AuthPage";
 import IssuesPage from "./pages/IssuesPage";
 import UsersPage from "./pages/UsersPage";
+import { useAuthStore } from "./store/useAuthStore";
 
 const AppContent = () => {
   const mode = useThemeStore((state) => state.mode);
   const theme = useMemo(() => getTheme(mode), [mode]);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    if (!isAuthenticated) return <Navigate to="/auth" replace />;
+    return <Layout>{children}</Layout>;
+  };
+
+  const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+    if (isAuthenticated) return <Navigate to="/issues" replace />;
+    return <>{children}</>;
+  };
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
         <Routes>
-          {/* Public Route */}
-          <Route path="/auth" element={<AuthPage />} />
+          <Route
+            path="/auth"
+            element={
+              <PublicRoute>
+                <AuthPage />
+              </PublicRoute>
+            }
+          />
 
-          {/* Protected Routes (Wrapped in Layout) */}
+          {/* Protected Routes */}
           <Route
             path="/issues"
             element={
-              <Layout>
+              <ProtectedRoute>
                 <IssuesPage />
-              </Layout>
+              </ProtectedRoute>
             }
           />
           <Route
             path="/users"
             element={
-              <Layout>
+              <ProtectedRoute>
                 <UsersPage />
-              </Layout>
+              </ProtectedRoute>
             }
           />
 
           {/* Fallback */}
-          <Route path="/" element={<Navigate to="/issues" replace />} />
-          <Route path="*" element={<Navigate to="/issues" replace />} />
+          <Route
+            path="/"
+            element={
+              <Navigate to={isAuthenticated ? "/issues" : "/auth"} replace />
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <Navigate to={isAuthenticated ? "/issues" : "/auth"} replace />
+            }
+          />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

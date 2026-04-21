@@ -1,4 +1,4 @@
-import apiClient from "./apiClient";
+import apiClient, { type PaginatedResponse } from "./apiClient";
 
 export const UserStatus = {
   Active: 1,
@@ -36,7 +36,7 @@ export interface UpdateUserData extends Partial<
 
 const userService = {
   getUsers: async () => {
-    const response = await apiClient.get<User[]>("/users");
+    const response = await apiClient.get<PaginatedResponse<User>>("/users");
     return response.data;
   },
 
