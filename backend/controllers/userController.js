@@ -164,33 +164,21 @@ module.exports = {
     }
   },
 
-  // @desc    Soft delete user (set status to inactive)
-  // @route   PUT /api/users/:id/soft
-  softDeleteUser: async (req, res) => {
+  // @desc    Delete user (permanent)
+  // @route   DELETE /api/users/:id
+  deleteUser: async (req, res) => {
     try {
-      const user = await User.findByIdAndUpdate(
-        req.params.id,
-        { status: 2 },
-        { new: true },
-      );
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
+      if (req.user.role !== 1) {
+        return res.status(403).json({ message: "Forbidden" });
       }
-      res.status(200).json(user);
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  },
-
-  // @desc    Hard delete user (permanent)
-  // @route   DELETE /api/users/:id/hard
-  hardDeleteUser: async (req, res) => {
-    try {
+      if (req.user.id === req.params.id) {
+        return res.status(400).json({ message: "You cannot delete yourself" });
+      }
       const user = await User.findByIdAndDelete(req.params.id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.status(200).json({ message: "User deleted permanently" });
+      res.status(200).json({ message: "User deleted successfully" });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }

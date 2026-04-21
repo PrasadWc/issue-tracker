@@ -11,7 +11,6 @@ router.get("/me", protect, userController.getMe);
 router.get("/", protect, userController.getUsers);
 router.get("/:id", protect, userController.getUser);
 router.put("/:id", protect, userController.updateUser);
-router.put("/:id/soft", protect, userController.softDeleteUser);
-router.delete("/:id/hard", protect, userController.hardDeleteUser);
+router.delete("/:id", protect, userController.deleteUser);
 
 module.exports = router;
