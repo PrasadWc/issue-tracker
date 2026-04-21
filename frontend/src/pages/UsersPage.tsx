@@ -29,6 +29,7 @@ import userService, {
   UserRole,
   UserStatus,
 } from "../services/userService";
+import CreateUserModal from "../components/CreateUserModal";
 
 const statusMap: Record<number, string> = {
   [UserStatus.Active]: "Active",
@@ -60,6 +61,7 @@ const UsersPage = () => {
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Debounce search key only
   useEffect(() => {
@@ -156,6 +158,7 @@ const UsersPage = () => {
         <Button
           variant="contained"
           startIcon={<PersonAddIcon />}
+          onClick={() => setIsCreateModalOpen(true)}
           sx={{
             borderRadius: "10px",
             height: 48,
@@ -448,6 +451,12 @@ const UsersPage = () => {
           sx={{ borderTop: "1px solid", borderColor: "divider" }}
         />
       </Paper>
+
+      <CreateUserModal
+        open={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => fetchUsers(true)}
+      />
     </Box>
   );
 };
