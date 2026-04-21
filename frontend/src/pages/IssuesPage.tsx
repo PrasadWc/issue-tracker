@@ -24,6 +24,7 @@ import issueService, {
   IssueStatus,
   IssuePriority,
 } from "../services/issueService";
+import { useAuthStore } from "../store/useAuthStore";
 
 const statusMap: Record<number, string> = {
   [IssueStatus.Open]: "Open",
@@ -45,20 +46,25 @@ const priorityColors: Record<string, "error" | "warning" | "info" | "default"> =
   };
 
 const IssuesPage = () => {
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  console.log("IssuesPage render - user:", user, "auth:", isAuthenticated);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchIssues();
   }, [page, rowsPerPage]);
 
-  const fetchIssues = async () => {
+  const fetchIssues = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       // Backend uses 1-based indexing for pages
       const res = await issueService.getIssues(page + 1, rowsPerPage);
       setIssues(res.data);
@@ -69,6 +75,20 @@ const IssuesPage = () => {
       setError("Failed to fetch issues. Please check your connectivity.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAssignToMe = async (issueId: string) => {
+    if (!user) return;
+    try {
+      setAssigningId(issueId);
+      await issueService.updateIssue(issueId, { assignee: user._id });
+      await fetchIssues(true);
+    } catch (err) {
+      console.error("Error assigning issue:", err);
+      setError("Failed to assign issue. Please try again.");
+    } finally {
+      setAssigningId(null);
     }
   };
 
@@ -214,16 +234,17 @@ const IssuesPage = () => {
                     hover
                     sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                   >
-                    <TableCell sx={{ fontWeight: 600 }}>
+                    <TableCell sx={{ fontWeight: 600, maxWidth: 200 }}>
                       {issue.title}
                     </TableCell>
                     <TableCell
                       sx={{
-                        maxWidth: 300,
-                        overflow: "hidden",
+                        maxWidth: 400,
+                        overflow: "visible",
                         textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        whiteSpace: "normal",
                         color: "text.secondary",
+                        wordWrap: "break-word",
                       }}
                     >
                       {issue.description}
@@ -254,9 +275,27 @@ const IssuesPage = () => {
                       {issue.createdBy?.name || "System"}
                     </TableCell>
                     <TableCell sx={{ color: "text.secondary" }}>
-                      {typeof issue.assignee === "object"
-                        ? issue.assignee.name
-                        : issue.assignee || "Unassigned"}
+                      {typeof issue.assignee === "object" ? (
+                        issue.assignee.name
+                      ) : issue.assignee ? (
+                        issue.assignee
+                      ) : (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          onClick={() => handleAssignToMe(issue._id)}
+                          disabled={!!assigningId}
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            borderRadius: "8px",
+                            height: 28,
+                          }}
+                        >
+                          {assigningId === issue._id ? "..." : "Fix this"}
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
