@@ -11,8 +11,8 @@ module.exports = {
 
       if (priority) filter.priority = priority;
       if (status) filter.status = status;
-      if (assignee == 1) filter.assignee = req.user.id;
-      if (createdBy == 1) filter.createdBy = req.user.id;
+      if (assignee) filter.assignee = assignee;
+      if (createdBy) filter.createdBy = createdBy;
       if (searchKey) {
         filter.title = { $regex: searchKey, $options: "i" };
       }
