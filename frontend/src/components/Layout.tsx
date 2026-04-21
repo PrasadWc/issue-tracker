@@ -25,6 +25,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useThemeStore } from "../store/useThemeStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useTheme } from "@mui/material/styles";
+import { UserRole } from "../services/userService";
 
 const DRAWER_WIDTH = 260;
 const MINI_DRAWER_WIDTH = 72;
@@ -53,7 +54,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const menuItems = [
     { text: "Issues", icon: <BugReportIcon />, path: "/issues" },
-    { text: "Users", icon: <PeopleIcon />, path: "/users" },
+    ...(user?.role === UserRole.Admin
+      ? [{ text: "Users", icon: <PeopleIcon />, path: "/users" }]
+      : []),
   ];
 
   const drawerContent = (

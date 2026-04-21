@@ -8,6 +8,7 @@ import AuthPage from "./pages/AuthPage";
 import IssuesPage from "./pages/IssuesPage";
 import UsersPage from "./pages/UsersPage";
 import { useAuthStore } from "./store/useAuthStore";
+import { UserRole } from "./services/userService";
 
 const AppContent = () => {
   const mode = useThemeStore((state) => state.mode);
@@ -22,6 +23,13 @@ const AppContent = () => {
   const PublicRoute = ({ children }: { children: React.ReactNode }) => {
     if (isAuthenticated) return <Navigate to="/issues" replace />;
     return <>{children}</>;
+  };
+
+  const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+    const { user } = useAuthStore();
+    if (!isAuthenticated) return <Navigate to="/auth" replace />;
+    if (user?.role !== UserRole.Admin) return <Navigate to="/issues" replace />;
+    return <Layout>{children}</Layout>;
   };
 
   return (
@@ -50,9 +58,9 @@ const AppContent = () => {
           <Route
             path="/users"
             element={
-              <ProtectedRoute>
+              <AdminRoute>
                 <UsersPage />
-              </ProtectedRoute>
+              </AdminRoute>
             }
           />
 
