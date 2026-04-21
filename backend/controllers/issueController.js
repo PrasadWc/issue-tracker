@@ -17,7 +17,10 @@ module.exports = {
 
       const result = await paginate(Issue, filter, {
         ...req.query,
-        populate: { path: "createdBy", select: "_id name email" },
+        populate: [
+          { path: "createdBy", select: "_id name email" },
+          { path: "assignee", select: "_id name email" },
+        ],
       });
       res.status(200).json(result);
     } catch (error) {
@@ -29,10 +32,10 @@ module.exports = {
   // @route   GET /api/issues/:id
   getIssue: async function (req, res) {
     try {
-      const issue = await Issue.findById(req.params.id).populate(
-        "createdBy",
-        "_id name email",
-      );
+      const issue = await Issue.findById(req.params.id).populate([
+        { path: "createdBy", select: "_id name email" },
+        { path: "assignee", select: "_id name email" },
+      ]);
       if (!issue) {
         return res.status(404).json({ message: "Issue not found" });
       }
