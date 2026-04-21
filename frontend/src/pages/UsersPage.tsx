@@ -59,7 +59,7 @@ const UsersPage = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
 
   // Debounce search key only
   useEffect(() => {
@@ -107,15 +107,19 @@ const UsersPage = () => {
     setPage(0);
   };
 
-  const handleDeactivate = async (id: string) => {
+  const handleToggleStatus = async (user: User) => {
     try {
-      setDeactivatingId(id);
-      await userService.softDeleteUser(id);
+      setStatusUpdatingId(user._id);
+      const newStatus =
+        user.status === UserStatus.Active
+          ? UserStatus.Inactive
+          : UserStatus.Active;
+      await userService.updateUser(user._id, { status: newStatus });
       fetchUsers(true);
     } catch (err) {
-      console.error("Error deactivating user:", err);
+      console.error("Error updating user status:", err);
     } finally {
-      setDeactivatingId(null);
+      setStatusUpdatingId(null);
     }
   };
 
@@ -399,25 +403,31 @@ const UsersPage = () => {
                       <TableCell align="right">
                         <Button
                           size="small"
-                          color="error"
-                          variant="text"
-                          onClick={() => handleDeactivate(user._id)}
-                          disabled={
-                            user.status !== UserStatus.Active ||
-                            deactivatingId === user._id
+                          color={
+                            user.status === UserStatus.Active
+                              ? "error"
+                              : "primary"
                           }
+                          variant="text"
+                          onClick={() => handleToggleStatus(user)}
+                          disabled={statusUpdatingId === user._id}
                           sx={{
                             textTransform: "none",
                             fontWeight: 600,
                             borderRadius: "8px",
-                            "&:disabled": { color: "text.disabled" },
+                            "&:hover": {
+                              bgcolor: (t) =>
+                                user.status === UserStatus.Active
+                                  ? `${t.palette.error.main}15`
+                                  : `${t.palette.primary.main}15`,
+                            },
                           }}
                         >
-                          {deactivatingId === user._id
+                          {statusUpdatingId === user._id
                             ? "..."
                             : user.status === UserStatus.Active
                               ? "Deactivate"
-                              : "Deactivated"}
+                              : "Activate"}
                         </Button>
                       </TableCell>
                     </TableRow>

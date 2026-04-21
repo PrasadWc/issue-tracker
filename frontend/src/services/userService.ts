@@ -63,13 +63,8 @@ const userService = {
     return response.data;
   },
 
-  softDeleteUser: async (id: string) => {
-    const response = await apiClient.put(`/users/${id}/soft`);
-    return response.data;
-  },
-
-  hardDeleteUser: async (id: string) => {
-    const response = await apiClient.delete(`/users/${id}/hard`);
+  deleteUser: async (id: string) => {
+    const response = await apiClient.delete(`/users/${id}`);
     return response.data;
   },
 
