@@ -19,45 +19,200 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useThemeStore } from "../store/useThemeStore";
 import { useTheme } from "@mui/material/styles";
 
+const DRAWER_WIDTH = 260;
+const MINI_DRAWER_WIDTH = 72;
+
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [open, setOpen] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const toggleColorMode = useThemeStore((state) => state.toggleMode);
+
+  const handleDrawerToggle = () => {
+    if (window.innerWidth < theme.breakpoints.values.sm) {
+      setMobileOpen(!mobileOpen);
+    } else {
+      setOpen(!open);
+    }
+  };
 
   const menuItems = [
     { text: "Issues", icon: <BugReportIcon />, path: "/issues" },
     { text: "Users", icon: <PeopleIcon />, path: "/users" },
   ];
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
-    setDrawerOpen(false);
-  };
+  const drawerContent = (
+    <Box
+      sx={{
+        height: "100%",
+        pt: "64px",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        sx={{
+          flexGrow: 1,
+          px: open ? 2 : 1,
+          pt: 3,
+          transition: "padding 0.2s",
+        }}
+      >
+        <List sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <ListItem
+                key={item.text}
+                disablePadding
+                sx={{ display: "block" }}
+              >
+                <ListItemButton
+                  onClick={() => {
+                    navigate(item.path);
+                    setMobileOpen(false);
+                  }}
+                  sx={{
+                    minHeight: 48,
+                    justifyContent: open ? "initial" : "center",
+                    px: 2.5,
+                    borderRadius: "12px",
+                    bgcolor: isActive ? "primary.main" : "transparent",
+                    color: isActive ? "white" : "text.secondary",
+                    "&:hover": {
+                      bgcolor: isActive ? "primary.dark" : "action.hover",
+                    },
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      color: "inherit",
+                      minWidth: 0,
+                      mr: open ? 2 : "auto",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.text}
+                    sx={{ opacity: open ? 1 : 0, transition: "opacity 0.2s" }}
+                    primaryTypographyProps={{
+                      fontWeight: isActive ? 600 : 500,
+                      fontSize: "0.95rem",
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
+      </Box>
+
+      <Divider sx={{ mx: 2, my: 2 }} />
+
+      <Box sx={{ px: open ? 2 : 1, pb: 3, transition: "padding 0.2s" }}>
+        <ListItem disablePadding sx={{ display: "block" }}>
+          <ListItemButton
+            onClick={() => navigate("/auth")}
+            sx={{
+              minHeight: 48,
+              justifyContent: open ? "initial" : "center",
+              px: 2.5,
+              borderRadius: "12px",
+              color: "error.main",
+              "&:hover": {
+                bgcolor: "error.lighter",
+              },
+            }}
+          >
+            <ListItemIcon
+              sx={{
+                color: "inherit",
+                minWidth: 0,
+                mr: open ? 2 : "auto",
+                justifyContent: "center",
+              }}
+            >
+              <LogoutIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Logout"
+              sx={{ opacity: open ? 1 : 0 }}
+              primaryTypographyProps={{ fontWeight: 500 }}
+            />
+          </ListItemButton>
+        </ListItem>
+      </Box>
+    </Box>
+  );
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100vh",
+        bgcolor: "background.default",
+      }}
+    >
       <AppBar
         position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        elevation={0}
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          bgcolor: (t) =>
+            t.palette.mode === "dark"
+              ? "rgba(10, 25, 41, 0.7)"
+              : "rgba(255, 255, 255, 0.7)",
+          backdropFilter: "blur(12px)",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          color: "text.primary",
+        }}
       >
-        <Toolbar>
+        <Toolbar sx={{ gap: 2 }}>
           <IconButton
             color="inherit"
-            aria-label="open drawer"
             edge="start"
-            onClick={() => setDrawerOpen(!drawerOpen)}
+            onClick={handleDrawerToggle}
             sx={{ mr: 2 }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Issue Tracker
-          </Typography>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: "8px",
+                bgcolor: "primary.main",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: (t) => `0 4px 10px ${t.palette.primary.main}44`,
+              }}
+            >
+              <BugReportIcon sx={{ color: "white", fontSize: 18 }} />
+            </Box>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, letterSpacing: -0.5 }}
+            >
+              Issue Tracker
+            </Typography>
+          </Box>
+
+          <Box sx={{ flexGrow: 1 }} />
+
           <IconButton onClick={toggleColorMode} color="inherit">
             {theme.palette.mode === "dark" ? (
               <Brightness7Icon />
@@ -67,44 +222,65 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           </IconButton>
         </Toolbar>
       </AppBar>
+
+      {/* Mobile Drawer */}
       <Drawer
         variant="temporary"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        ModalProps={{ keepMounted: true }}
         sx={{
-          width: 240,
+          display: { xs: "block", sm: "none" },
+          "& .MuiDrawer-paper": {
+            boxSizing: "border-box",
+            width: DRAWER_WIDTH,
+            borderRight: "1px solid",
+            borderColor: "divider",
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+
+      {/* Desktop Drawer with Mini-Variant Transitions */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: "none", sm: "block" },
           flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { width: 240, boxSizing: "border-box" },
+          whiteSpace: "nowrap",
+          boxSizing: "border-box",
+          "& .MuiDrawer-paper": {
+            position: "relative",
+            width: open ? DRAWER_WIDTH : MINI_DRAWER_WIDTH,
+            transition: theme.transitions.create("width", {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
+            overflowX: "hidden",
+            borderRight: "1px solid",
+            borderColor: "divider",
+            bgcolor: "background.default",
+          },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 4,
+          transition: theme.transitions.create(["margin", "width"], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
+          width: "100%",
         }}
       >
         <Toolbar />
-        <Box sx={{ overflow: "auto" }}>
-          <List>
-            {menuItems.map((item) => (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton onClick={() => handleNavigation(item.path)}>
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-          <Divider />
-          <List>
-            <ListItem disablePadding>
-              <ListItemButton onClick={() => navigate("/auth")}>
-                <ListItemIcon>
-                  <LogoutIcon />
-                </ListItemIcon>
-                <ListItemText primary="Logout" />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Box>
-      </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Toolbar />
-        {children}
+        <Box sx={{ maxWidth: 1200, mx: "auto" }}>{children}</Box>
       </Box>
     </Box>
   );
