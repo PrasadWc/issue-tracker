@@ -178,13 +178,14 @@ const IssuesPage = () => {
                 <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Priority</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Assigned To</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Created By</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Assignee</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <Typography variant="body2" color="text.secondary">
                       Loading issues...
                     </Typography>
@@ -192,7 +193,7 @@ const IssuesPage = () => {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <Typography variant="body2" color="error">
                       {error}
                     </Typography>
@@ -200,7 +201,7 @@ const IssuesPage = () => {
                 </TableRow>
               ) : issues.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <Typography variant="body2" color="text.secondary">
                       No issues found.
                     </Typography>
@@ -248,6 +249,9 @@ const IssuesPage = () => {
                           borderRadius: "6px",
                         }}
                       />
+                    </TableCell>
+                    <TableCell sx={{ color: "text.secondary" }}>
+                      {issue.createdBy?.name || "System"}
                     </TableCell>
                     <TableCell sx={{ color: "text.secondary" }}>
                       {typeof issue.assignee === "object"

@@ -22,6 +22,7 @@ export interface Issue {
   description: string;
   status: IssueStatus;
   priority: IssuePriority;
+  createdBy: { _id: string; name: string; email: string };
   assignee?: string | { _id: string; name: string };
   createdAt: string;
   updatedAt: string;
