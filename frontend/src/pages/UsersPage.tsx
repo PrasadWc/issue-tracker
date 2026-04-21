@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useState, useEffect } from "react";
 import userService, {
   type User,
@@ -61,6 +62,7 @@ const UsersPage = () => {
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Debounce search key only
@@ -122,6 +124,24 @@ const UsersPage = () => {
       console.error("Error updating user status:", err);
     } finally {
       setStatusUpdatingId(null);
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    if (
+      !window.confirm("Are you sure you want to permanently delete this user?")
+    )
+      return;
+
+    try {
+      setDeletingId(id);
+      await userService.deleteUser(id);
+      fetchUsers(true);
+    } catch (err: any) {
+      console.error("Error deleting user:", err);
+      alert(err.response?.data?.message || "Failed to delete user.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -286,7 +306,10 @@ const UsersPage = () => {
                   <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }} align="right">
+                  <TableCell
+                    sx={{ fontWeight: 600, width: 180, pr: 3 }}
+                    align="right"
+                  >
                     Actions
                   </TableCell>
                 </TableRow>
@@ -403,35 +426,65 @@ const UsersPage = () => {
                           </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell align="right">
-                        <Button
-                          size="small"
-                          color={
-                            user.status === UserStatus.Active
-                              ? "error"
-                              : "primary"
-                          }
-                          variant="text"
-                          onClick={() => handleToggleStatus(user)}
-                          disabled={statusUpdatingId === user._id}
+                      <TableCell align="right" sx={{ width: 180, pr: 1 }}>
+                        <Box
                           sx={{
-                            textTransform: "none",
-                            fontWeight: 600,
-                            borderRadius: "8px",
-                            "&:hover": {
-                              bgcolor: (t) =>
-                                user.status === UserStatus.Active
-                                  ? `${t.palette.error.main}15`
-                                  : `${t.palette.primary.main}15`,
-                            },
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            gap: 0.5,
                           }}
                         >
-                          {statusUpdatingId === user._id
-                            ? "..."
-                            : user.status === UserStatus.Active
-                              ? "Deactivate"
-                              : "Activate"}
-                        </Button>
+                          <Button
+                            size="small"
+                            color={
+                              user.status === UserStatus.Active
+                                ? "error"
+                                : "primary"
+                            }
+                            variant="text"
+                            onClick={() => handleToggleStatus(user)}
+                            disabled={statusUpdatingId === user._id}
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: 600,
+                              borderRadius: "8px",
+                              "&:hover": {
+                                bgcolor: (t) =>
+                                  user.status === UserStatus.Active
+                                    ? `${t.palette.error.main}15`
+                                    : `${t.palette.primary.main}15`,
+                              },
+                            }}
+                          >
+                            {statusUpdatingId === user._id
+                              ? "..."
+                              : user.status === UserStatus.Active
+                                ? "Deactivate"
+                                : "Activate"}
+                          </Button>
+                          <Button
+                            size="small"
+                            color="error"
+                            variant="text"
+                            onClick={() => handleDeleteUser(user._id)}
+                            disabled={deletingId === user._id}
+                            sx={{
+                              minWidth: 40,
+                              borderRadius: "8px",
+                              height: 32,
+                              "&:hover": {
+                                bgcolor: "error.main",
+                                color: "white",
+                              },
+                            }}
+                          >
+                            {deletingId === user._id ? (
+                              <CircularProgress size={16} color="inherit" />
+                            ) : (
+                              <DeleteIcon sx={{ fontSize: 18 }} />
+                            )}
+                          </Button>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))
