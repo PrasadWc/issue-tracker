@@ -23,7 +23,6 @@ import issueService, {
   type Issue,
   IssueStatus,
   IssuePriority,
-  IssueSeverity,
 } from "../services/issueService";
 
 const statusMap: Record<number, string> = {
@@ -38,20 +37,7 @@ const priorityMap: Record<number, string> = {
   [IssuePriority.High]: "High",
 };
 
-const severityMap: Record<number, string> = {
-  [IssueSeverity.Low]: "Low",
-  [IssueSeverity.Medium]: "Medium",
-  [IssueSeverity.High]: "High",
-};
-
 const priorityColors: Record<string, "error" | "warning" | "info" | "default"> =
-  {
-    High: "error",
-    Medium: "warning",
-    Low: "info",
-  };
-
-const severityColors: Record<string, "error" | "warning" | "info" | "default"> =
   {
     High: "error",
     Medium: "warning",
@@ -191,7 +177,6 @@ const IssuesPage = () => {
                 <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Priority</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Severity</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Assigned To</TableCell>
               </TableRow>
@@ -199,7 +184,7 @@ const IssuesPage = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
                     <Typography variant="body2" color="text.secondary">
                       Loading issues...
                     </Typography>
@@ -207,7 +192,7 @@ const IssuesPage = () => {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
                     <Typography variant="body2" color="error">
                       {error}
                     </Typography>
@@ -215,7 +200,7 @@ const IssuesPage = () => {
                 </TableRow>
               ) : issues.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
                     <Typography variant="body2" color="text.secondary">
                       No issues found.
                     </Typography>
@@ -250,20 +235,6 @@ const IssuesPage = () => {
                         sx={{
                           fontWeight: 600,
                           borderRadius: "6px",
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={severityMap[issue.severity]}
-                        color={severityColors[severityMap[issue.severity]]}
-                        size="small"
-                        sx={{
-                          fontWeight: 600,
-                          border: "none",
-                          borderRadius: "6px",
-                          bgcolor: (t: any) =>
-                            `${t.palette[severityColors[severityMap[issue.severity]] || "primary"].main}15`,
                         }}
                       />
                     </TableCell>

@@ -16,21 +16,12 @@ export const IssuePriority = {
 
 export type IssuePriority = (typeof IssuePriority)[keyof typeof IssuePriority];
 
-export const IssueSeverity = {
-  Low: 1,
-  Medium: 2,
-  High: 3,
-} as const;
-
-export type IssueSeverity = (typeof IssueSeverity)[keyof typeof IssueSeverity];
-
 export interface Issue {
   _id: string;
   title: string;
   description: string;
   status: IssueStatus;
   priority: IssuePriority;
-  severity: IssueSeverity;
   assignee?: string | { _id: string; name: string };
   createdAt: string;
   updatedAt: string;
@@ -41,7 +32,6 @@ export interface CreateIssueData {
   description: string;
   status?: IssueStatus;
   priority?: IssuePriority;
-  severity?: IssueSeverity;
   assignee?: string;
 }
 
