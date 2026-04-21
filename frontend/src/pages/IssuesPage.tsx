@@ -12,10 +12,12 @@ import {
   Button,
   TextField,
   InputAdornment,
-  IconButton,
   TablePagination,
   Menu,
   MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
@@ -68,15 +70,37 @@ const IssuesPage = () => {
   );
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
 
+  // Filter and Search states
+  const [searchKey, setSearchKey] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<number | "">("");
+  const [priorityFilter, setPriorityFilter] = useState<number | "">("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchKey);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchKey]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearch, statusFilter, priorityFilter]);
+
   useEffect(() => {
     fetchIssues();
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, debouncedSearch, statusFilter, priorityFilter]);
 
   const fetchIssues = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       // Backend uses 1-based indexing for pages
-      const res = await issueService.getIssues(page + 1, rowsPerPage);
+      const res = await issueService.getIssues(page + 1, rowsPerPage, {
+        status: statusFilter === "" ? undefined : (statusFilter as number),
+        priority:
+          priorityFilter === "" ? undefined : (priorityFilter as number),
+        searchKey: debouncedSearch || undefined,
+      });
       setIssues(res.data);
       setTotal(res.total);
       setError(null);
@@ -198,29 +222,81 @@ const IssuesPage = () => {
           }}
         >
           <TextField
+            placeholder="Search by title or description..."
             size="small"
-            placeholder="Search issues..."
-            sx={{ flexGrow: 1, maxWidth: 400 }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" color="action" />
-                  </InputAdornment>
-                ),
-                sx: { borderRadius: "10px" },
+            value={searchKey}
+            onChange={(e) => setSearchKey(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: "text.secondary" }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              width: 320,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                bgcolor: "background.paper",
               },
             }}
           />
-          <IconButton
-            sx={{
-              borderRadius: "10px",
-              border: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <FilterListIcon fontSize="small" />
-          </IconButton>
+
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) => setStatusFilter(e.target.value as number | "")}
+                sx={{ borderRadius: "10px" }}
+              >
+                <MenuItem value="">All Statuses</MenuItem>
+                {Object.entries(statusMap).map(([value, label]) => (
+                  <MenuItem key={value} value={parseInt(value)}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Priority</InputLabel>
+              <Select
+                value={priorityFilter}
+                label="Priority"
+                onChange={(e) =>
+                  setPriorityFilter(e.target.value as number | "")
+                }
+                sx={{ borderRadius: "10px" }}
+              >
+                <MenuItem value="">All Priorities</MenuItem>
+                {Object.entries(priorityMap).map(([value, label]) => (
+                  <MenuItem key={value} value={parseInt(value)}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Button
+              startIcon={<FilterListIcon />}
+              sx={{
+                borderRadius: "10px",
+                color: "text.secondary",
+                fontWeight: 600,
+                textTransform: "none",
+                "&:hover": { bgcolor: "action.hover" },
+              }}
+              onClick={() => {
+                setSearchKey("");
+                setStatusFilter("");
+                setPriorityFilter("");
+              }}
+            >
+              Clear
+            </Button>
+          </Box>
         </Box>
 
         <TableContainer>

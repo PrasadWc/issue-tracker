@@ -39,9 +39,13 @@ export interface CreateIssueData {
 export interface UpdateIssueData extends Partial<CreateIssueData> {}
 
 const issueService = {
-  getIssues: async (page = 1, limit = 10) => {
+  getIssues: async (
+    page = 1,
+    limit = 10,
+    filters?: { status?: number; priority?: number; searchKey?: string },
+  ) => {
     const response = await apiClient.get<PaginatedResponse<Issue>>("/issues", {
-      params: { page, limit },
+      params: { page, limit, ...filters },
     });
     return response.data;
   },
