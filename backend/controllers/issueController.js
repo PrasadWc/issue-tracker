@@ -6,11 +6,13 @@ module.exports = {
   // @route   GET /api/issues
   getIssues: async function (req, res) {
     try {
-      const { priority, status, searchKey } = req.query;
+      const { priority, status, searchKey, assignee, createdBy } = req.query;
       let filter = {};
 
       if (priority) filter.priority = priority;
       if (status) filter.status = status;
+      if (assignee == 1) filter.assignee = req.user.id;
+      if (createdBy == 1) filter.createdBy = req.user.id;
       if (searchKey) {
         filter.title = { $regex: searchKey, $options: "i" };
       }
