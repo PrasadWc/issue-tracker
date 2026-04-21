@@ -18,71 +18,56 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import issueService, {
+  type Issue,
+  IssueStatus,
+  IssuePriority,
+} from "../services/issueService";
 
-const mockIssues = [
-  {
-    id: "ISS-001",
-    title: "Login button not working",
-    priority: "High",
-    status: "Open",
-    assignedTo: "John Doe",
-  },
-  {
-    id: "ISS-002",
-    title: "UI alignment on mobile",
-    priority: "Medium",
-    status: "In Progress",
-    assignedTo: "Jane Smith",
-  },
-  {
-    id: "ISS-003",
-    title: "Backend API timeout",
-    priority: "Critical",
-    status: "Closed",
-    assignedTo: "Bob Johnson",
-  },
-  {
-    id: "ISS-004",
-    title: "Update documentation",
-    priority: "Low",
-    status: "Open",
-    assignedTo: "Alice Wong",
-  },
-  {
-    id: "ISS-005",
-    title: "Fix memory leak",
-    priority: "High",
-    status: "Open",
-    assignedTo: "Charlie Brown",
-  },
-  {
-    id: "ISS-006",
-    title: "Optimize image assets",
-    priority: "Low",
-    status: "Closed",
-    assignedTo: "David Lee",
-  },
-  {
-    id: "ISS-007",
-    title: "Database migration error",
-    priority: "Critical",
-    status: "In Progress",
-    assignedTo: "Eve Taylor",
-  },
-];
+const statusMap: Record<number, string> = {
+  [IssueStatus.Open]: "Open",
+  [IssueStatus.InProgress]: "In Progress",
+  [IssueStatus.Closed]: "Closed",
+};
+
+const priorityMap: Record<number, string> = {
+  [IssuePriority.Low]: "Low",
+  [IssuePriority.Medium]: "Medium",
+  [IssuePriority.High]: "High",
+};
 
 const priorityColors: Record<string, "error" | "warning" | "info" | "default"> =
   {
-    Critical: "error",
-    High: "warning",
-    Medium: "info",
-    Low: "default",
+    High: "error",
+    Medium: "warning",
+    Low: "info",
   };
 
 const IssuesPage = () => {
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  useEffect(() => {
+    fetchIssues();
+  }, []);
+
+  const fetchIssues = async () => {
+    try {
+      setLoading(true);
+      const data = await issueService.getIssues();
+      setIssues(data);
+      setError(null);
+    } catch (err: any) {
+      console.error("Error fetching issues:", err);
+      setError("Failed to fetch issues. Please check your connectivity.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -194,56 +179,86 @@ const IssuesPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {mockIssues
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((issue) => (
-                  <TableRow
-                    key={issue.id}
-                    hover
-                    sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                  >
-                    <TableCell
-                      sx={{ fontWeight: 500, color: "text.secondary" }}
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Loading issues...
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body2" color="error">
+                      {error}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : issues.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No issues found.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                issues
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((issue) => (
+                    <TableRow
+                      key={issue._id}
+                      hover
+                      sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                     >
-                      {issue.id}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>
-                      {issue.title}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={issue.priority}
-                        color={priorityColors[issue.priority]}
-                        size="small"
-                        sx={{
-                          fontWeight: 600,
-                          borderRadius: "6px",
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={issue.status}
-                        variant="outlined"
-                        size="small"
-                        sx={{
-                          fontWeight: 500,
-                          borderRadius: "6px",
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ color: "text.secondary" }}>
-                      {issue.assignedTo}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      <TableCell
+                        sx={{ fontWeight: 500, color: "text.secondary" }}
+                      >
+                        {issue._id
+                          .substring(issue._id.length - 6)
+                          .toUpperCase()}
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>
+                        {issue.title}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={priorityMap[issue.priority]}
+                          color={priorityColors[priorityMap[issue.priority]]}
+                          size="small"
+                          sx={{
+                            fontWeight: 600,
+                            borderRadius: "6px",
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={statusMap[issue.status]}
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            fontWeight: 500,
+                            borderRadius: "6px",
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ color: "text.secondary" }}>
+                        {typeof issue.assignee === "object"
+                          ? issue.assignee.name
+                          : issue.assignee || "Unassigned"}
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={mockIssues.length}
+          count={issues.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}

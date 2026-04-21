@@ -19,73 +19,55 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import userService, {
+  type User,
+  UserRole,
+  UserStatus,
+} from "../services/userService";
 
-const mockUsers = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    role: "Admin",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane@example.com",
-    role: "Developer",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    role: "User",
-    status: "Inactive",
-  },
-  {
-    id: 4,
-    name: "Alice Wong",
-    email: "alice@example.com",
-    role: "Designer",
-    status: "Active",
-  },
-  {
-    id: 5,
-    name: "Charlie Brown",
-    email: "charlie@example.com",
-    role: "Developer",
-    status: "Active",
-  },
-  {
-    id: 6,
-    name: "David Lee",
-    email: "david@example.com",
-    role: "User",
-    status: "Active",
-  },
-  {
-    id: 7,
-    name: "Eve Taylor",
-    email: "eve@example.com",
-    role: "Admin",
-    status: "Active",
-  },
-];
+const statusMap: Record<number, string> = {
+  [UserStatus.Active]: "Active",
+  [UserStatus.Inactive]: "Inactive",
+};
+
+const roleMap: Record<number, string> = {
+  [UserRole.Admin]: "Admin",
+  [UserRole.User]: "User",
+};
 
 const roleColors: Record<
   string,
   "primary" | "secondary" | "info" | "success" | "warning"
 > = {
   Admin: "primary",
-  Developer: "secondary",
-  Designer: "info",
   User: "warning",
 };
 
 const UsersPage = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await userService.getUsers();
+      setUsers(data);
+      setError(null);
+    } catch (err: any) {
+      console.error("Error fetching users:", err);
+      setError("Failed to fetch users. Please check your connectivity.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -198,98 +180,129 @@ const UsersPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {mockUsers
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((user) => (
-                  <TableRow
-                    key={user.id}
-                    hover
-                    sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                  >
-                    <TableCell>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                      >
-                        <Avatar
-                          sx={{
-                            bgcolor: (t) => t.palette.primary.light,
-                            width: 40,
-                            height: 40,
-                            fontSize: "0.9rem",
-                            fontWeight: 700,
-                          }}
-                        >
-                          {user.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </Avatar>
-                        <Box>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: 700 }}
-                          >
-                            {user.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {user.email}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={user.role}
-                        color={roleColors[user.role] as any}
-                        size="small"
-                        sx={{
-                          fontWeight: 600,
-                          borderRadius: "6px",
-                          bgcolor: (t: any) =>
-                            `${t.palette[roleColors[user.role] || "primary"].main}15`,
-                          color: (t: any) =>
-                            t.palette[roleColors[user.role] || "primary"].main,
-                          border: "none",
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Loading users...
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body2" color="error">
+                      {error}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No users found.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                users
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((user) => (
+                    <TableRow
+                      key={user._id}
+                      hover
+                      sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                    >
+                      <TableCell>
                         <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                        >
+                          <Avatar
+                            sx={{
+                              bgcolor: (t) => t.palette.primary.light,
+                              width: 40,
+                              height: 40,
+                              fontSize: "0.9rem",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {user.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </Avatar>
+                          <Box>
+                            <Typography
+                              variant="subtitle2"
+                              sx={{ fontWeight: 700 }}
+                            >
+                              {user.name}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {user.email}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={roleMap[user.role]}
+                          color={roleColors[roleMap[user.role]] as any}
+                          size="small"
                           sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            bgcolor:
-                              user.status === "Active"
-                                ? "success.main"
-                                : "text.disabled",
+                            fontWeight: 600,
+                            borderRadius: "6px",
+                            bgcolor: (t: any) =>
+                              `${t.palette[roleColors[roleMap[user.role]] || "primary"].main}15`,
+                            color: (t: any) =>
+                              t.palette[
+                                roleColors[roleMap[user.role]] || "primary"
+                              ].main,
+                            border: "none",
                           }}
                         />
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {user.status}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Button
-                        size="small"
-                        sx={{ textTransform: "none", fontWeight: 600 }}
-                      >
-                        Edit
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              bgcolor:
+                                user.status === UserStatus.Active
+                                  ? "success.main"
+                                  : "text.disabled",
+                            }}
+                          />
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {statusMap[user.status]}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button
+                          size="small"
+                          sx={{ textTransform: "none", fontWeight: 600 }}
+                        >
+                          Edit
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={mockUsers.length}
+          count={users.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
