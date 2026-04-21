@@ -14,10 +14,13 @@ import {
   InputAdornment,
   IconButton,
   TablePagination,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { useState, useEffect } from "react";
 import issueService, {
   type Issue,
@@ -29,7 +32,7 @@ import { useAuthStore } from "../store/useAuthStore";
 const statusMap: Record<number, string> = {
   [IssueStatus.Open]: "Open",
   [IssueStatus.InProgress]: "In Progress",
-  [IssueStatus.Closed]: "Closed",
+  [IssueStatus.Closed]: "Completed",
 };
 
 const priorityMap: Record<number, string> = {
@@ -37,7 +40,6 @@ const priorityMap: Record<number, string> = {
   [IssuePriority.Medium]: "Medium",
   [IssuePriority.High]: "High",
 };
-
 const priorityColors: Record<string, "error" | "warning" | "info" | "default"> =
   {
     High: "error",
@@ -45,11 +47,15 @@ const priorityColors: Record<string, "error" | "warning" | "info" | "default"> =
     Low: "info",
   };
 
+const statusColors: Record<string, "info" | "warning" | "success" | "default"> =
+  {
+    Open: "info",
+    "In Progress": "warning",
+    Completed: "success",
+  };
+
 const IssuesPage = () => {
   const user = useAuthStore((state) => state.user);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-
-  console.log("IssuesPage render - user:", user, "auth:", isAuthenticated);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -57,6 +63,10 @@ const IssuesPage = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [statusMenuAnchor, setStatusMenuAnchor] = useState<null | HTMLElement>(
+    null,
+  );
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
 
   useEffect(() => {
     fetchIssues();
@@ -89,6 +99,36 @@ const IssuesPage = () => {
       setError("Failed to assign issue. Please try again.");
     } finally {
       setAssigningId(null);
+    }
+  };
+
+  const handleOpenStatusMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    issue: Issue,
+  ) => {
+    setStatusMenuAnchor(event.currentTarget);
+    setSelectedIssue(issue);
+  };
+
+  const handleCloseStatusMenu = () => {
+    setStatusMenuAnchor(null);
+    setSelectedIssue(null);
+  };
+
+  const handleStatusChange = async (newStatus: number) => {
+    if (!selectedIssue) return;
+    try {
+      setLoading(true);
+      await issueService.updateIssue(selectedIssue._id, {
+        status: newStatus as any,
+      });
+      handleCloseStatusMenu();
+      await fetchIssues(true);
+    } catch (err) {
+      console.error("Error updating status:", err);
+      setError("Failed to update status.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -261,15 +301,53 @@ const IssuesPage = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={statusMap[issue.status]}
-                        variant="outlined"
-                        size="small"
-                        sx={{
-                          fontWeight: 500,
-                          borderRadius: "6px",
-                        }}
-                      />
+                      {(() => {
+                        const isOwnIssue =
+                          user &&
+                          issue.assignee &&
+                          (typeof issue.assignee === "object"
+                            ? issue.assignee._id === user._id
+                            : issue.assignee === user._id);
+                        const canUpdate =
+                          isOwnIssue && issue.status === IssueStatus.InProgress;
+
+                        return (
+                          <Chip
+                            label={statusMap[issue.status]}
+                            color={statusColors[statusMap[issue.status]]}
+                            variant="outlined"
+                            size="small"
+                            onClick={
+                              canUpdate
+                                ? (e) => handleOpenStatusMenu(e, issue)
+                                : undefined
+                            }
+                            onDelete={
+                              canUpdate
+                                ? (e) => handleOpenStatusMenu(e, issue)
+                                : undefined
+                            }
+                            deleteIcon={
+                              canUpdate ? (
+                                <KeyboardArrowDownIcon
+                                  sx={{ fontSize: "14px !important" }}
+                                />
+                              ) : undefined
+                            }
+                            sx={{
+                              fontWeight: 600,
+                              borderRadius: "6px",
+                              bgcolor: (t: any) =>
+                                `${t.palette[statusColors[statusMap[issue.status]] || "primary"].main}15`,
+                              cursor: canUpdate ? "pointer" : "default",
+                              "& .MuiChip-deleteIcon": {
+                                color: "inherit",
+                                margin: "0 2px 0 -4px",
+                              },
+                            }}
+                          />
+                        );
+                      })()}
                     </TableCell>
                     <TableCell sx={{ color: "text.secondary" }}>
                       {issue.createdBy?.name || "System"}
@@ -314,6 +392,36 @@ const IssuesPage = () => {
           sx={{ borderTop: "1px solid", borderColor: "divider" }}
         />
       </Paper>
+
+      {/* Status Transition Menu */}
+      <Menu
+        anchorEl={statusMenuAnchor}
+        open={Boolean(statusMenuAnchor)}
+        onClose={handleCloseStatusMenu}
+        PaperProps={{
+          sx: {
+            borderRadius: "12px",
+            mt: 1,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+            border: "1px solid",
+            borderColor: "divider",
+          },
+        }}
+      >
+        <MenuItem
+          onClick={() => handleStatusChange(IssueStatus.Closed)}
+          sx={{
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            color: "error.main",
+            borderRadius: "8px",
+            mx: 1,
+            "&:hover": { bgcolor: "error.lighter" },
+          }}
+        >
+          Complete
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };
