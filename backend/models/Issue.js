@@ -22,12 +22,7 @@ const issueSchema = mongoose.Schema(
       enum: [1, 2, 3], //1 - low, 2 - medium, 3 - high
       default: 1,
     },
-    severity: {
-      type: Number,
-      required: [true, "Please add a severity"],
-      enum: [1, 2, 3], //1 - low, 2 - medium, 3 - high
-      default: 1,
-    },
+
     assignee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

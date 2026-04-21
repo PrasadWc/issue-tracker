@@ -6,11 +6,10 @@ module.exports = {
   // @route   GET /api/issues
   getIssues: async function (req, res) {
     try {
-      const { priority, severity, status, searchKey } = req.query;
+      const { priority, status, searchKey } = req.query;
       let filter = {};
 
       if (priority) filter.priority = priority;
-      if (severity) filter.severity = severity;
       if (status) filter.status = status;
       if (searchKey) {
         filter.title = { $regex: searchKey, $options: "i" };
@@ -48,7 +47,6 @@ module.exports = {
           description: issue.description,
           status: issue.status,
           priority: issue.priority,
-          severity: issue.severity,
         }));
 
         if (
@@ -64,7 +62,7 @@ module.exports = {
       }
 
       // Single create
-      const { title, description, status, priority, severity } = req.body;
+      const { title, description, status, priority } = req.body;
       if (!title || !description) {
         return res
           .status(400)
@@ -75,7 +73,6 @@ module.exports = {
         description,
         status,
         priority,
-        severity,
       });
       res.status(201).json(issue);
     } catch (error) {
