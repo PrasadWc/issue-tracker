@@ -42,7 +42,13 @@ const issueService = {
   getIssues: async (
     page = 1,
     limit = 10,
-    filters?: { status?: number; priority?: number; searchKey?: string },
+    filters?: {
+      status?: number;
+      priority?: number;
+      searchKey?: string;
+      assignee?: string;
+      createdBy?: string;
+    },
   ) => {
     const response = await apiClient.get<PaginatedResponse<Issue>>("/issues", {
       params: { page, limit, ...filters },

@@ -25,6 +25,7 @@ import userService, {
   UserRole,
   UserStatus,
 } from "../services/userService";
+import TableSkeleton from "../components/TableSkeleton";
 
 const statusMap: Record<number, string> = {
   [UserStatus.Active]: "Active",
@@ -181,13 +182,7 @@ const UsersPage = () => {
             </TableHead>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Loading users...
-                    </Typography>
-                  </TableCell>
-                </TableRow>
+                <TableSkeleton columns={4} rows={rowsPerPage} hasAvatar />
               ) : error ? (
                 <TableRow>
                   <TableCell colSpan={4} align="center" sx={{ py: 3 }}>

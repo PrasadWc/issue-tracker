@@ -18,6 +18,8 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
@@ -30,6 +32,7 @@ import issueService, {
   IssuePriority,
 } from "../services/issueService";
 import { useAuthStore } from "../store/useAuthStore";
+import TableSkeleton from "../components/TableSkeleton";
 
 const statusMap: Record<number, string> = {
   [IssueStatus.Open]: "Open",
@@ -75,6 +78,9 @@ const IssuesPage = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<number | "">("");
   const [priorityFilter, setPriorityFilter] = useState<number | "">("");
+  const [viewTab, setViewTab] = useState<"all" | "assigned" | "reported">(
+    "all",
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -85,11 +91,18 @@ const IssuesPage = () => {
 
   useEffect(() => {
     setPage(0);
-  }, [debouncedSearch, statusFilter, priorityFilter]);
+  }, [debouncedSearch, statusFilter, priorityFilter, viewTab]);
 
   useEffect(() => {
     fetchIssues();
-  }, [page, rowsPerPage, debouncedSearch, statusFilter, priorityFilter]);
+  }, [
+    page,
+    rowsPerPage,
+    debouncedSearch,
+    statusFilter,
+    priorityFilter,
+    viewTab,
+  ]);
 
   const fetchIssues = async (silent = false) => {
     try {
@@ -100,6 +113,8 @@ const IssuesPage = () => {
         priority:
           priorityFilter === "" ? undefined : (priorityFilter as number),
         searchKey: debouncedSearch || undefined,
+        assignee: viewTab === "assigned" ? user?._id : undefined,
+        createdBy: viewTab === "reported" ? user?._id : undefined,
       });
       setIssues(res.data);
       setTotal(res.total);
@@ -175,11 +190,11 @@ const IssuesPage = () => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-end",
-          mb: 4,
+          mb: 2,
         }}
       >
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
             Issues
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -201,6 +216,33 @@ const IssuesPage = () => {
         </Button>
       </Box>
 
+      {/* Tabs Section */}
+      <Tabs
+        value={viewTab}
+        onChange={(_e, newValue) => setViewTab(newValue)}
+        sx={{
+          mb: 1,
+          "& .MuiTab-root": {
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.95rem",
+            minWidth: 100,
+            color: "text.secondary",
+            "&.Mui-selected": {
+              color: "primary.main",
+            },
+          },
+          "& .MuiTabs-indicator": {
+            height: 2,
+            borderRadius: "3px 3px 0 0",
+          },
+        }}
+      >
+        <Tab label="All Issues" value="all" />
+        <Tab label="Assigned to Me" value="assigned" />
+        <Tab label="Reported by Me" value="reported" />
+      </Tabs>
+
       {/* Filter and Content Card */}
       <Paper
         elevation={0}
@@ -215,8 +257,10 @@ const IssuesPage = () => {
           sx={{
             p: 2,
             display: "flex",
+            flexDirection: { xs: "column", md: "row" },
             gap: 2,
-            alignItems: "center",
+            alignItems: { xs: "stretch", md: "center" },
+            justifyContent: "space-between",
             borderBottom: "1px solid",
             borderColor: "divider",
           }}
@@ -234,7 +278,7 @@ const IssuesPage = () => {
               ),
             }}
             sx={{
-              width: 320,
+              width: { xs: "100%", md: 320 },
               "& .MuiOutlinedInput-root": {
                 borderRadius: "10px",
                 bgcolor: "background.paper",
@@ -242,7 +286,13 @@ const IssuesPage = () => {
             }}
           />
 
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              flexDirection: { xs: "column", sm: "row" },
+            }}
+          >
             <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel>Status</InputLabel>
               <Select
@@ -320,13 +370,7 @@ const IssuesPage = () => {
             </TableHead>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Loading issues...
-                    </Typography>
-                  </TableCell>
-                </TableRow>
+                <TableSkeleton columns={6} rows={rowsPerPage} />
               ) : error ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
@@ -458,7 +502,7 @@ const IssuesPage = () => {
           </Table>
         </TableContainer>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
           count={total}
           rowsPerPage={rowsPerPage}

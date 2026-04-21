@@ -90,7 +90,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   }}
                   sx={{
                     minHeight: 48,
-                    justifyContent: open ? "initial" : "center",
+                    justifyContent: {
+                      xs: "initial",
+                      sm: open ? "initial" : "center",
+                    },
                     px: 2.5,
                     borderRadius: "12px",
                     bgcolor: isActive ? "primary.main" : "transparent",
@@ -105,7 +108,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     sx={{
                       color: "inherit",
                       minWidth: 0,
-                      mr: open ? 2 : "auto",
+                      mr: { xs: 2, sm: open ? 2 : "auto" },
                       justifyContent: "center",
                     }}
                   >
@@ -113,7 +116,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   </ListItemIcon>
                   <ListItemText
                     primary={item.text}
-                    sx={{ opacity: open ? 1 : 0, transition: "opacity 0.2s" }}
+                    sx={{
+                      opacity: { xs: 1, sm: open ? 1 : 0 },
+                      transition: "opacity 0.2s",
+                    }}
                     primaryTypographyProps={{
                       fontWeight: isActive ? 600 : 500,
                       fontSize: "0.95rem",
@@ -128,13 +134,22 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
       <Divider sx={{ mx: 2, my: 2 }} />
 
-      <Box sx={{ px: open ? 2 : 1, pb: 3, transition: "padding 0.2s" }}>
+      <Box
+        sx={{
+          px: { xs: 2, sm: open ? 2 : 1 },
+          pb: 3,
+          transition: "padding 0.2s",
+        }}
+      >
         <ListItem disablePadding sx={{ display: "block" }}>
           <ListItemButton
             onClick={handleLogout}
             sx={{
               minHeight: 48,
-              justifyContent: open ? "initial" : "center",
+              justifyContent: {
+                xs: "initial",
+                sm: open ? "initial" : "center",
+              },
               px: 2.5,
               borderRadius: "12px",
               color: "error.main",
@@ -158,7 +173,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </ListItemIcon>
             <ListItemText
               primary="Logout"
-              sx={{ opacity: open ? 1 : 0 }}
+              sx={{
+                opacity: { xs: 1, sm: open ? 1 : 0 },
+                transition: "opacity 0.2s",
+              }}
               primaryTypographyProps={{ fontWeight: 500 }}
             />
           </ListItemButton>
@@ -171,7 +189,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <Box
       sx={{
         display: "flex",
-        minHeight: "100vh",
+        height: "100vh",
+        overflow: "hidden",
         bgcolor: "background.default",
       }}
     >
@@ -191,12 +210,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         }}
       >
         <Toolbar sx={{ gap: 2 }}>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2 }}
-          >
+          <IconButton color="inherit" edge="start" onClick={handleDrawerToggle}>
             <MenuIcon />
           </IconButton>
 
@@ -225,42 +239,48 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
           <Box sx={{ flexGrow: 1 }} />
 
-          <IconButton onClick={toggleColorMode} color="inherit">
-            {theme.palette.mode === "dark" ? (
-              <Brightness7Icon />
-            ) : (
-              <Brightness4Icon />
-            )}
-          </IconButton>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <IconButton
+              onClick={toggleColorMode}
+              color="inherit"
+              sx={{ mr: -1 }}
+            >
+              {theme.palette.mode === "dark" ? (
+                <Brightness7Icon />
+              ) : (
+                <Brightness4Icon />
+              )}
+            </IconButton>
 
-          {user && (
-            <Box sx={{ display: "flex", alignItems: "center", ml: 1 }}>
-              <Divider
-                orientation="vertical"
-                flexItem
-                sx={{ mx: 2, height: 24, my: "auto" }}
-              />
-              <Tooltip title={user.name}>
-                <Avatar
-                  sx={{
-                    width: 38,
-                    height: 38,
-                    bgcolor: "primary.main",
-                    fontSize: "0.9rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    border: "2px solid",
-                    borderColor: "divider",
-                  }}
-                >
-                  {user.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </Avatar>
-              </Tooltip>
-            </Box>
-          )}
+            {user && (
+              <>
+                <Divider
+                  orientation="vertical"
+                  flexItem
+                  sx={{ mx: 1.5, height: 24, my: "auto" }}
+                />
+                <Tooltip title={user.name}>
+                  <Avatar
+                    sx={{
+                      width: 38,
+                      height: 38,
+                      bgcolor: "primary.main",
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      border: "2px solid",
+                      borderColor: "divider",
+                    }}
+                  >
+                    {user.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </Avatar>
+                </Tooltip>
+              </>
+            )}
+          </Box>
         </Toolbar>
       </AppBar>
 
@@ -291,8 +311,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           flexShrink: 0,
           whiteSpace: "nowrap",
           boxSizing: "border-box",
+          width: open ? DRAWER_WIDTH : MINI_DRAWER_WIDTH,
+          transition: theme.transitions.create("width", {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
           "& .MuiDrawer-paper": {
-            position: "relative",
             width: open ? DRAWER_WIDTH : MINI_DRAWER_WIDTH,
             transition: theme.transitions.create("width", {
               easing: theme.transitions.easing.sharp,
@@ -312,7 +336,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 4,
+          height: "100vh",
+          overflowY: "auto",
+          p: { xs: 2, md: 3 },
           transition: theme.transitions.create(["margin", "width"], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
@@ -321,7 +347,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         }}
       >
         <Toolbar />
-        <Box sx={{ maxWidth: 1200, mx: "auto" }}>{children}</Box>
+        <Box sx={{ maxWidth: 1400, mx: "auto" }}>{children}</Box>
       </Box>
     </Box>
   );
