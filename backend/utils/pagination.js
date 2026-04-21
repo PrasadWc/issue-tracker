@@ -11,9 +11,15 @@ const paginate = async (model, query = {}, options = {}) => {
   const skip = (page - 1) * limit;
   const sort = options.sort || { createdAt: -1 };
 
+  let queryBuilder = model.find(query).skip(skip).limit(limit).sort(sort);
+
+  if (options.populate) {
+    queryBuilder = queryBuilder.populate(options.populate);
+  }
+
   const [total, data] = await Promise.all([
     model.countDocuments(query),
-    model.find(query).skip(skip).limit(limit).sort(sort),
+    queryBuilder,
   ]);
 
   return {

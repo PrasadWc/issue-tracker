@@ -15,7 +15,10 @@ module.exports = {
         filter.title = { $regex: searchKey, $options: "i" };
       }
 
-      const result = await paginate(Issue, filter, req.query);
+      const result = await paginate(Issue, filter, {
+        ...req.query,
+        populate: { path: "createdBy", select: "_id name email" },
+      });
       res.status(200).json(result);
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -26,7 +29,10 @@ module.exports = {
   // @route   GET /api/issues/:id
   getIssue: async function (req, res) {
     try {
-      const issue = await Issue.findById(req.params.id);
+      const issue = await Issue.findById(req.params.id).populate(
+        "createdBy",
+        "_id name email",
+      );
       if (!issue) {
         return res.status(404).json({ message: "Issue not found" });
       }
@@ -47,6 +53,7 @@ module.exports = {
           description: issue.description,
           status: issue.status,
           priority: issue.priority,
+          createdBy: req.user.id,
         }));
 
         if (
@@ -73,6 +80,7 @@ module.exports = {
         description,
         status,
         priority,
+        createdBy: req.user.id,
       });
       res.status(201).json(issue);
     } catch (error) {

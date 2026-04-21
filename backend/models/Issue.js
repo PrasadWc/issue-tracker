@@ -23,6 +23,11 @@ const issueSchema = mongoose.Schema(
       default: 1,
     },
 
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
     assignee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
