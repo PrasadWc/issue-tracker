@@ -13,11 +13,15 @@ import {
   Chip,
   TextField,
   InputAdornment,
-  IconButton,
   TablePagination,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Fade,
+  CircularProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import FilterListIcon from "@mui/icons-material/FilterList";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import { useState, useEffect } from "react";
 import userService, {
@@ -50,22 +54,68 @@ const UsersPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [total, setTotal] = useState(0);
+  const [searchKey, setSearchKey] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
 
+  // Debounce search key only
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchKey);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchKey]);
 
-  const fetchUsers = async () => {
+  // Reset page on filter/search change
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearch, roleFilter, statusFilter]);
+
+  // Fetch users on filter/pagination changes
+  useEffect(() => {
+    fetchUsers(true);
+  }, [debouncedSearch, roleFilter, statusFilter, page, rowsPerPage]);
+
+  const fetchUsers = async (silent = false) => {
     try {
-      setLoading(true);
-      const res = await userService.getUsers();
+      if (!silent) setLoading(true);
+      const res = await userService.getUsers({
+        searchKey: debouncedSearch,
+        role: roleFilter ? Number(roleFilter) : undefined,
+        status: statusFilter ? Number(statusFilter) : undefined,
+        page: page + 1,
+        limit: rowsPerPage,
+      });
       setUsers(res.data);
+      setTotal(res.total);
       setError(null);
     } catch (err: any) {
       console.error("Error fetching users:", err);
       setError("Failed to fetch users. Please check your connectivity.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSearchKey("");
+    setRoleFilter("");
+    setStatusFilter("");
+    setPage(0);
+  };
+
+  const handleDeactivate = async (id: string) => {
+    try {
+      setDeactivatingId(id);
+      await userService.softDeleteUser(id);
+      fetchUsers(true);
+    } catch (err) {
+      console.error("Error deactivating user:", err);
+    } finally {
+      setDeactivatingId(null);
     }
   };
 
@@ -128,8 +178,10 @@ const UsersPage = () => {
           sx={{
             p: 2,
             display: "flex",
+            flexDirection: { xs: "column", md: "row" },
             gap: 2,
-            alignItems: "center",
+            alignItems: { xs: "stretch", md: "center" },
+            justifyContent: "space-between",
             borderBottom: "1px solid",
             borderColor: "divider",
           }}
@@ -137,7 +189,9 @@ const UsersPage = () => {
           <TextField
             size="small"
             placeholder="Search users..."
-            sx={{ flexGrow: 1, maxWidth: 400 }}
+            value={searchKey}
+            onChange={(e) => setSearchKey(e.target.value)}
+            sx={{ flexGrow: 1, maxWidth: { md: 400 } }}
             slotProps={{
               input: {
                 startAdornment: (
@@ -149,65 +203,129 @@ const UsersPage = () => {
               },
             }}
           />
-          <IconButton
+
+          <Box
             sx={{
-              borderRadius: "10px",
-              border: "1px solid",
-              borderColor: "divider",
+              display: "flex",
+              gap: 2,
+              flexDirection: { xs: "column", sm: "row" },
             }}
           >
-            <FilterListIcon fontSize="small" />
-          </IconButton>
-        </Box>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={roleFilter}
+                label="Role"
+                onChange={(e) => {
+                  setRoleFilter(e.target.value);
+                  setPage(0);
+                }}
+                sx={{ borderRadius: "10px" }}
+              >
+                <MenuItem value="">All Roles</MenuItem>
+                <MenuItem value={UserRole.Admin.toString()}>Admin</MenuItem>
+                <MenuItem value={UserRole.User.toString()}>User</MenuItem>
+              </Select>
+            </FormControl>
 
-        <TableContainer>
-          <Table sx={{ minWidth: 650 }}>
-            <TableHead
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(0);
+                }}
+                sx={{ borderRadius: "10px" }}
+              >
+                <MenuItem value="">All Status</MenuItem>
+                <MenuItem value={UserStatus.Active.toString()}>Active</MenuItem>
+                <MenuItem value={UserStatus.Inactive.toString()}>
+                  Inactive
+                </MenuItem>
+              </Select>
+            </FormControl>
+
+            <Button
+              size="small"
+              onClick={handleClearFilters}
               sx={{
-                bgcolor: (t) =>
-                  t.palette.mode === "dark"
-                    ? "rgba(255,255,255,0.02)"
-                    : "rgba(0,0,0,0.01)",
+                borderRadius: "10px",
+                color: "text.secondary",
+                fontWeight: 600,
+                textTransform: "none",
+                "&:hover": { bgcolor: "action.hover" },
               }}
             >
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">
-                  Actions
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {error ? (
+              Clear
+            </Button>
+          </Box>
+        </Box>
+
+        <Fade in={true} timeout={600}>
+          <TableContainer>
+            <Table sx={{ minWidth: 650 }}>
+              <TableHead
+                sx={{
+                  bgcolor: (t) =>
+                    t.palette.mode === "dark"
+                      ? "rgba(255,255,255,0.02)"
+                      : "rgba(0,0,0,0.01)",
+                }}
+              >
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
-                    <Typography variant="body2" color="error">
-                      {error}
-                    </Typography>
+                  <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">
+                    Actions
                   </TableCell>
                 </TableRow>
-              ) : !loading && users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      No users found.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                users
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((user) => (
+              </TableHead>
+              <TableBody>
+                {loading && users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                      <CircularProgress size={24} sx={{ mb: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        Loading users...
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                      <Typography variant="body2" color="error">
+                        {error}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No users found.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  users.map((user) => (
                     <TableRow
                       key={user._id}
                       hover
-                      sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                      sx={{
+                        "&:last-child td, &:last-child th": { border: 0 },
+                      }}
                     >
                       <TableCell>
                         <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2,
+                          }}
                         >
                           <Avatar
                             sx={{
@@ -230,14 +348,11 @@ const UsersPage = () => {
                             >
                               {user.name}
                             </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {user.email}
-                            </Typography>
                           </Box>
                         </Box>
+                      </TableCell>
+                      <TableCell sx={{ color: "text.secondary" }}>
+                        {user.email}
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -259,7 +374,11 @@ const UsersPage = () => {
                       </TableCell>
                       <TableCell>
                         <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
                         >
                           <Box
                             sx={{
@@ -280,21 +399,38 @@ const UsersPage = () => {
                       <TableCell align="right">
                         <Button
                           size="small"
-                          sx={{ textTransform: "none", fontWeight: 600 }}
+                          color="error"
+                          variant="text"
+                          onClick={() => handleDeactivate(user._id)}
+                          disabled={
+                            user.status !== UserStatus.Active ||
+                            deactivatingId === user._id
+                          }
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            borderRadius: "8px",
+                            "&:disabled": { color: "text.disabled" },
+                          }}
                         >
-                          Edit
+                          {deactivatingId === user._id
+                            ? "..."
+                            : user.status === UserStatus.Active
+                              ? "Deactivate"
+                              : "Deactivated"}
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Fade>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
-          count={users.length}
+          count={total}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}

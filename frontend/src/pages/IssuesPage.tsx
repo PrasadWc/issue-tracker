@@ -27,9 +27,9 @@ import {
   DialogContentText,
   DialogActions,
   Fade,
+  CircularProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import FilterListIcon from "@mui/icons-material/FilterList";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -105,7 +105,7 @@ const IssuesPage = () => {
   }, [debouncedSearch, statusFilter, priorityFilter, viewTab]);
 
   useEffect(() => {
-    fetchIssues();
+    fetchIssues(true);
   }, [
     page,
     rowsPerPage,
@@ -367,7 +367,6 @@ const IssuesPage = () => {
             </FormControl>
 
             <Button
-              startIcon={<FilterListIcon />}
               sx={{
                 borderRadius: "10px",
                 color: "text.secondary",
@@ -412,7 +411,20 @@ const IssuesPage = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {error ? (
+                {loading && issues.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={viewTab === "reported" ? 7 : 6}
+                      align="center"
+                      sx={{ py: 3 }}
+                    >
+                      <CircularProgress size={24} sx={{ mb: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        Loading issues...
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
                   <TableRow>
                     <TableCell
                       colSpan={viewTab === "reported" ? 7 : 6}
@@ -424,7 +436,7 @@ const IssuesPage = () => {
                       </Typography>
                     </TableCell>
                   </TableRow>
-                ) : !loading && issues.length === 0 ? (
+                ) : issues.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={viewTab === "reported" ? 7 : 6}

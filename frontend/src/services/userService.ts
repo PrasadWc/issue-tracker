@@ -35,8 +35,16 @@ export interface UpdateUserData extends Partial<
 > {}
 
 const userService = {
-  getUsers: async () => {
-    const response = await apiClient.get<PaginatedResponse<User>>("/users");
+  getUsers: async (params?: {
+    searchKey?: string;
+    role?: number;
+    status?: number;
+    page?: number;
+    limit?: number;
+  }) => {
+    const response = await apiClient.get<PaginatedResponse<User>>("/users", {
+      params,
+    });
     return response.data;
   },
 
