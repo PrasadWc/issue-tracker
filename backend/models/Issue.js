@@ -38,4 +38,12 @@ const issueSchema = mongoose.Schema(
   },
 );
 
+// Update status to In Progress (2) when assignee is added
+issueSchema.pre("save", function (next) {
+  if (this.isModified("assignee") && this.assignee && this.status === 1) {
+    this.status = 2;
+  }
+  next();
+});
+
 module.exports = mongoose.model("Issue", issueSchema);

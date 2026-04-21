@@ -93,16 +93,17 @@ module.exports = {
   updateIssue: async function (req, res) {
     try {
       const issue = await Issue.findById(req.params.id);
+
       if (!issue) {
         return res.status(404).json({ message: "Issue not found" });
       }
-      const updatedIssue = await Issue.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        {
-          new: true,
-        },
-      );
+
+      // Update fields
+      Object.keys(req.body).forEach((key) => {
+        issue[key] = req.body[key];
+      });
+
+      const updatedIssue = await issue.save();
       res.status(200).json(updatedIssue);
     } catch (error) {
       res.status(500).json({ message: error.message });
