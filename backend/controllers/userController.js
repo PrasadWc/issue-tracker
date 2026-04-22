@@ -123,6 +123,15 @@ module.exports = {
       // Find user by email (include password for comparison)
       const user = await User.findOne({ email }).select("+password");
 
+      if (user && user.status === 2) {
+        return res
+          .status(401)
+          .json({
+            message:
+              "Your account has been deactivated. Please contact the administrator.",
+          });
+      }
+
       if (user && (await user.matchPassword(password))) {
         res.json({
           user: {
