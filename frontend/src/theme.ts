@@ -6,10 +6,10 @@ export const getTheme = (mode: PaletteMode) =>
     palette: {
       mode,
       primary: {
-        main: "#90caf9",
+        main: mode === "dark" ? "#66b8fbff" : "#264ee0ff",
       },
       secondary: {
-        main: "#f48fb1",
+        main: mode === "dark" ? "#f48fb1" : "#f48fb1",
       },
       background: {
         default: mode === "dark" ? "#0a1929" : "#f5f5f5",
@@ -24,6 +24,24 @@ export const getTheme = (mode: PaletteMode) =>
     },
     shape: {
       borderRadius: 8,
+    },
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            transition: "background-color 0.4s ease, color 0.4s ease",
+          },
+          // Ensure all paper-like components also transition
+          ".MuiPaper-root": {
+            transition:
+              "background-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease",
+          },
+          // Transition for sidebar/appbar
+          ".MuiDrawer-paper, .MuiAppBar-root": {
+            transition: "background-color 0.4s ease, color 0.4s ease",
+          },
+        },
+      },
     },
   });
 

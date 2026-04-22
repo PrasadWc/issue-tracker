@@ -27,6 +27,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useConfirmStore } from "../store/useConfirmStore";
 import { useTheme } from "@mui/material/styles";
 import { UserRole } from "../services/userService";
+import { motion, AnimatePresence } from "framer-motion";
 
 const DRAWER_WIDTH = 260;
 const MINI_DRAWER_WIDTH = 72;
@@ -267,13 +268,29 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             <IconButton
               onClick={toggleColorMode}
               color="inherit"
-              sx={{ mr: -1 }}
+              sx={{
+                mr: -1,
+                width: 40,
+                height: 40,
+                overflow: "hidden",
+              }}
             >
-              {theme.palette.mode === "dark" ? (
-                <Brightness7Icon />
-              ) : (
-                <Brightness4Icon />
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={theme.palette.mode}
+                  initial={{ y: -20, opacity: 0, rotate: -90 }}
+                  animate={{ y: 0, opacity: 1, rotate: 0 }}
+                  exit={{ y: 20, opacity: 0, rotate: 90 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ display: "flex" }}
+                >
+                  {theme.palette.mode === "dark" ? (
+                    <Brightness7Icon />
+                  ) : (
+                    <Brightness4Icon />
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </IconButton>
 
             {user && (
