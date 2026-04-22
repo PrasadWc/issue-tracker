@@ -31,6 +31,7 @@ import userService, {
   UserStatus,
 } from "../services/userService";
 import CreateUserModal from "../components/CreateUserModal";
+import { useConfirmStore } from "../store/useConfirmStore";
 
 const statusMap: Record<number, string> = {
   [UserStatus.Active]: "Active",
@@ -64,6 +65,9 @@ const UsersPage = () => {
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const confirm = useConfirmStore((state) => state.confirm);
+  const setConfirmLoading = useConfirmStore((state) => state.setLoading);
+  const closeConfirm = useConfirmStore((state) => state.onCancel);
 
   // Debounce search key only
   useEffect(() => {
@@ -112,14 +116,24 @@ const UsersPage = () => {
   };
 
   const handleToggleStatus = async (user: User) => {
+    const isActivating = user.status === UserStatus.Inactive;
+    const actionText = isActivating ? "activate" : "deactivate";
+
+    const isConfirmed = await confirm({
+      title: `${isActivating ? "Activate" : "Deactivate"} User`,
+      message: `Are you sure you want to ${actionText} user "${user.name}"?`,
+      confirmText: isActivating ? "Activate" : "Deactivate",
+      cancelText: "Cancel",
+      severity: isActivating ? "info" : "warning",
+    });
+    if (!isConfirmed) return;
     try {
+      setConfirmLoading(true);
       setStatusUpdatingId(user._id);
-      const newStatus =
-        user.status === UserStatus.Active
-          ? UserStatus.Inactive
-          : UserStatus.Active;
+      const newStatus = isActivating ? UserStatus.Active : UserStatus.Inactive;
       await userService.updateUser(user._id, { status: newStatus });
       fetchUsers(true);
+      closeConfirm();
     } catch (err) {
       console.error("Error updating user status:", err);
     } finally {
@@ -127,21 +141,28 @@ const UsersPage = () => {
     }
   };
 
-  const handleDeleteUser = async (id: string) => {
-    if (
-      !window.confirm("Are you sure you want to permanently delete this user?")
-    )
-      return;
+  const handleDeleteUser = async (user: User) => {
+    const isConfirmed = await confirm({
+      title: "Delete User",
+      message: `Are you sure you want to permanently delete user "${user.name}"? This action cannot be undone.`,
+      confirmText: "Delete",
+      severity: "error",
+    });
+
+    if (!isConfirmed) return;
 
     try {
-      setDeletingId(id);
-      await userService.deleteUser(id);
-      fetchUsers(true);
+      setConfirmLoading(true);
+      setDeletingId(user._id);
+      await userService.deleteUser(user._id);
+      await fetchUsers(true);
+      closeConfirm();
     } catch (err: any) {
       console.error("Error deleting user:", err);
       alert(err.response?.data?.message || "Failed to delete user.");
     } finally {
       setDeletingId(null);
+      setConfirmLoading(false);
     }
   };
 
@@ -466,7 +487,7 @@ const UsersPage = () => {
                             size="small"
                             color="error"
                             variant="text"
-                            onClick={() => handleDeleteUser(user._id)}
+                            onClick={() => handleDeleteUser(user)}
                             disabled={deletingId === user._id}
                             sx={{
                               minWidth: 40,

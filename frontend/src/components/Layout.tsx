@@ -24,6 +24,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useThemeStore } from "../store/useThemeStore";
 import { useAuthStore } from "../store/useAuthStore";
+import { useConfirmStore } from "../store/useConfirmStore";
 import { useTheme } from "@mui/material/styles";
 import { UserRole } from "../services/userService";
 
@@ -38,6 +39,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const theme = useTheme();
   const toggleColorMode = useThemeStore((state) => state.toggleMode);
   const { user, logout } = useAuthStore();
+  const confirm = useConfirmStore((state) => state.confirm);
+  const setLoading = useConfirmStore((state) => state.setLoading);
+  const closeConfirm = useConfirmStore((state) => state.onCancel);
 
   const handleDrawerToggle = () => {
     if (window.innerWidth < theme.breakpoints.values.sm) {
@@ -47,9 +51,26 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/auth");
+  const handleLogout = async () => {
+    const isConfirmed = await confirm({
+      title: "Logout",
+      message: "Are you sure you want to logout?",
+      confirmText: "Logout",
+      cancelText: "Cancel",
+      severity: "error",
+    });
+    if (!isConfirmed) return;
+    try {
+      setLoading(true);
+      await logout();
+    } catch (error) {
+      console.error("Error logging out:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+      closeConfirm();
+      navigate("/auth");
+    }
   };
 
   const menuItems = [

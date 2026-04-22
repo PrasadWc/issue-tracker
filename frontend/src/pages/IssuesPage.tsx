@@ -21,11 +21,6 @@ import {
   Tabs,
   Tab,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   Fade,
   CircularProgress,
 } from "@mui/material";
@@ -41,6 +36,7 @@ import issueService, {
 } from "../services/issueService";
 import { useAuthStore } from "../store/useAuthStore";
 import CreateIssueModal from "../components/CreateIssueModal";
+import { useConfirmStore } from "../store/useConfirmStore";
 
 const statusMap: Record<number, string> = {
   [IssueStatus.Open]: "Open",
@@ -90,8 +86,9 @@ const IssuesPage = () => {
     "all",
   );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [issueToDelete, setIssueToDelete] = useState<Issue | null>(null);
+  const confirm = useConfirmStore((state) => state.confirm);
+  const setConfirmLoading = useConfirmStore((state) => state.setLoading);
+  const closeConfirm = useConfirmStore((state) => state.onCancel);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -138,17 +135,29 @@ const IssuesPage = () => {
     }
   };
 
-  const handleAssignToMe = async (issueId: string) => {
+  const handleAssignToMe = async (issueId: string, title: string) => {
     if (!user) return;
+    const isConfirmed = await confirm({
+      title: "Assign Issue",
+      message: `Would you like to assign "${title}" to yourself?`,
+      confirmText: "Assign to Me",
+      severity: "info",
+    });
+
+    if (!isConfirmed) return;
+
     try {
+      setConfirmLoading(true);
       setAssigningId(issueId);
       await issueService.updateIssue(issueId, { assignee: user._id });
       await fetchIssues(true);
+      closeConfirm();
     } catch (err) {
       console.error("Error assigning issue:", err);
       setError("Failed to assign issue. Please try again.");
     } finally {
       setAssigningId(null);
+      setConfirmLoading(false);
     }
   };
 
@@ -165,45 +174,59 @@ const IssuesPage = () => {
     setSelectedIssue(null);
   };
 
-  const handleOpenDeleteConfirm = (issue: Issue) => {
-    setIssueToDelete(issue);
-    setDeleteConfirmOpen(true);
-  };
+  const handleConfirmDelete = async (issue: Issue) => {
+    const isConfirmed = await confirm({
+      title: "Delete Issue",
+      message: `Are you sure you want to delete "${issue.title}"? This action cannot be undone.`,
+      confirmText: "Delete",
+      severity: "error",
+    });
 
-  const handleCloseDeleteConfirm = () => {
-    setIssueToDelete(null);
-    setDeleteConfirmOpen(false);
-  };
+    if (!isConfirmed) return;
 
-  const handleConfirmDelete = async () => {
-    if (!issueToDelete) return;
     try {
+      setConfirmLoading(true);
       setLoading(true);
-      await issueService.deleteIssue(issueToDelete._id);
-      handleCloseDeleteConfirm();
+      await issueService.deleteIssue(issue._id);
       await fetchIssues(true);
+      closeConfirm();
     } catch (err) {
       console.error("Error deleting issue:", err);
       setError("Failed to delete issue.");
     } finally {
       setLoading(false);
+      setConfirmLoading(false);
     }
   };
 
   const handleStatusChange = async (newStatus: number) => {
     if (!selectedIssue) return;
+
+    if (newStatus === IssueStatus.Closed) {
+      const isConfirmed = await confirm({
+        title: "Complete Issue",
+        message: `Are you sure you want to mark "${selectedIssue.title}" as completed?`,
+        confirmText: "Complete",
+        severity: "success",
+      });
+      if (!isConfirmed) return;
+    }
+
     try {
+      if (newStatus === IssueStatus.Closed) setConfirmLoading(true);
       setLoading(true);
       await issueService.updateIssue(selectedIssue._id, {
         status: newStatus as any,
       });
       handleCloseStatusMenu();
       await fetchIssues(true);
+      if (newStatus === IssueStatus.Closed) closeConfirm();
     } catch (err) {
       console.error("Error updating status:", err);
       setError("Failed to update status.");
     } finally {
       setLoading(false);
+      setConfirmLoading(false);
     }
   };
 
@@ -544,7 +567,9 @@ const IssuesPage = () => {
                             size="small"
                             variant="outlined"
                             color="primary"
-                            onClick={() => handleAssignToMe(issue._id)}
+                            onClick={() =>
+                              handleAssignToMe(issue._id, issue.title)
+                            }
                             disabled={!!assigningId}
                             sx={{
                               textTransform: "none",
@@ -562,7 +587,7 @@ const IssuesPage = () => {
                           <IconButton
                             color="error"
                             size="small"
-                            onClick={() => handleOpenDeleteConfirm(issue)}
+                            onClick={() => handleConfirmDelete(issue)}
                           >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
@@ -593,47 +618,7 @@ const IssuesPage = () => {
         onSuccess={() => fetchIssues(true)}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteConfirmOpen}
-        onClose={handleCloseDeleteConfirm}
-        PaperProps={{ sx: { borderRadius: "16px" } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700 }}>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete issue "
-            <strong>{issueToDelete?.title}</strong>"? This action cannot be
-            undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={handleCloseDeleteConfirm}
-            sx={{
-              fontWeight: 600,
-              textTransform: "none",
-              color: "text.secondary",
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmDelete}
-            color="error"
-            variant="contained"
-            disabled={loading}
-            sx={{
-              fontWeight: 600,
-              textTransform: "none",
-              borderRadius: "10px",
-              boxShadow: (t) => `0 4px 12px ${t.palette.error.main}44`,
-            }}
-          >
-            {loading ? "Deleting..." : "Delete Issue"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Global Confirmation Dialog is handled in App.tsx */}
 
       {/* Status Transition Menu */}
       <Menu
