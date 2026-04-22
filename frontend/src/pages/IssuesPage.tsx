@@ -38,6 +38,7 @@ import issueService, {
 import { useAuthStore } from "../store/useAuthStore";
 import CreateIssueModal from "../components/CreateIssueModal";
 import { useConfirmStore } from "../store/useConfirmStore";
+import { useNotificationStore } from "../store/useNotificationStore";
 
 const statusMap: Record<number, string> = {
   [IssueStatus.Open]: "Open",
@@ -69,7 +70,7 @@ const IssuesPage = () => {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const showNotification = useNotificationStore((state) => state.showNotification);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [assigningId, setAssigningId] = useState<string | null>(null);
@@ -128,10 +129,9 @@ const IssuesPage = () => {
       });
       setIssues(res.data);
       setTotal(res.total);
-      setError(null);
     } catch (err: any) {
       console.error("Error fetching issues:", err);
-      setError("Failed to fetch issues. Please check your connectivity.");
+      showNotification("Failed to fetch issues. Please check your connectivity.", "error");
     } finally {
       setLoading(false);
     }
@@ -153,10 +153,11 @@ const IssuesPage = () => {
       setAssigningId(issueId);
       await issueService.updateIssue(issueId, { assignee: user._id });
       await fetchIssues(true);
+      showNotification("Issue assigned to you successfully!", "success");
       closeConfirm();
     } catch (err) {
       console.error("Error assigning issue:", err);
-      setError("Failed to assign issue. Please try again.");
+      showNotification("Failed to assign issue. Please try again.", "error");
     } finally {
       setAssigningId(null);
       setConfirmLoading(false);
@@ -191,10 +192,11 @@ const IssuesPage = () => {
       setLoading(true);
       await issueService.deleteIssue(issue._id);
       await fetchIssues(true);
+      showNotification("Issue deleted successfully!", "success");
       closeConfirm();
     } catch (err) {
       console.error("Error deleting issue:", err);
-      setError("Failed to delete issue.");
+      showNotification("Failed to delete issue.", "error");
     } finally {
       setLoading(false);
       setConfirmLoading(false);
@@ -222,10 +224,11 @@ const IssuesPage = () => {
       });
       handleCloseStatusMenu();
       await fetchIssues(true);
+      showNotification(`Issue status updated to ${statusMap[newStatus || 0]}`, "success");
       if (newStatus === IssueStatus.Closed) closeConfirm();
     } catch (err) {
       console.error("Error updating status:", err);
-      setError("Failed to update status.");
+      showNotification("Failed to update status.", "error");
     } finally {
       setLoading(false);
       setConfirmLoading(false);
@@ -456,18 +459,6 @@ const IssuesPage = () => {
                       <CircularProgress size={24} sx={{ mb: 1 }} />
                       <Typography variant="body2" color="text.secondary">
                         Loading issues...
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : error ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={viewTab === "reported" ? 7 : 6}
-                      align="center"
-                      sx={{ py: 3 }}
-                    >
-                      <Typography variant="body2" color="error">
-                        {error}
                       </Typography>
                     </TableCell>
                   </TableRow>

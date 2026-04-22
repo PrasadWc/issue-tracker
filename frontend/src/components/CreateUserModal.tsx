@@ -10,10 +10,10 @@ import {
   Select,
   MenuItem,
   Box,
-  Typography,
 } from "@mui/material";
 import { useState } from "react";
 import userService, { UserRole } from "../services/userService";
+import { useNotificationStore } from "../store/useNotificationStore";
 
 interface CreateUserModalProps {
   open: boolean;
@@ -31,29 +31,31 @@ const CreateUserModal = ({
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<number>(UserRole.User);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const showNotification = useNotificationStore((state) => state.showNotification);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
-      setError("Name, email, and password are required.");
+      showNotification("Name, email, and password are required.", "error");
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
       await userService.createUser({
         name,
         email,
         password,
         role: role as any,
       });
+      const roleText = role === UserRole.Admin ? "Admin" : "User";
+      showNotification(`${roleText} "${name}" created successfully!`, "success");
       handleClose();
       onSuccess();
     } catch (err: any) {
       console.error("Error creating user:", err);
-      setError(err.response?.data?.message || "Failed to create user.");
+      const roleText = role === UserRole.Admin ? "admin" : "user";
+      showNotification(err.response?.data?.message || `Failed to create ${roleText}.`, "error");
     } finally {
       setLoading(false);
     }
@@ -64,7 +66,6 @@ const CreateUserModal = ({
     setEmail("");
     setPassword("");
     setRole(UserRole.User);
-    setError(null);
     onClose();
   };
 
@@ -82,11 +83,6 @@ const CreateUserModal = ({
       <form onSubmit={handleSubmit}>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 1 }}>
-            {error && (
-              <Typography color="error" variant="body2">
-                {error}
-              </Typography>
-            )}
             <TextField
               label="Full Name"
               placeholder="John Doe"

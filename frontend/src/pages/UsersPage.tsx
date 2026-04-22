@@ -32,6 +32,7 @@ import userService, {
 } from "../services/userService";
 import CreateUserModal from "../components/CreateUserModal";
 import { useConfirmStore } from "../store/useConfirmStore";
+import { useNotificationStore } from "../store/useNotificationStore";
 
 const statusMap: Record<number, string> = {
   [UserStatus.Active]: "Active",
@@ -65,6 +66,7 @@ const UsersPage = () => {
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const showNotification = useNotificationStore((state) => state.showNotification);
   const confirm = useConfirmStore((state) => state.confirm);
   const setConfirmLoading = useConfirmStore((state) => state.setLoading);
   const closeConfirm = useConfirmStore((state) => state.onCancel);
@@ -118,10 +120,11 @@ const UsersPage = () => {
   const handleToggleStatus = async (user: User) => {
     const isActivating = user.status === UserStatus.Inactive;
     const actionText = isActivating ? "activate" : "deactivate";
+    const roleText = user.role === UserRole.Admin ? "Admin" : "User";
 
     const isConfirmed = await confirm({
-      title: `${isActivating ? "Activate" : "Deactivate"} User`,
-      message: `Are you sure you want to ${actionText} user "${user.name}"?`,
+      title: `${isActivating ? "Activate" : "Deactivate"} ${roleText}`,
+      message: `Are you sure you want to ${actionText} ${roleText.toLowerCase()} "${user.name}"?`,
       confirmText: isActivating ? "Activate" : "Deactivate",
       cancelText: "Cancel",
       severity: isActivating ? "info" : "warning",
@@ -132,19 +135,24 @@ const UsersPage = () => {
       setStatusUpdatingId(user._id);
       const newStatus = isActivating ? UserStatus.Active : UserStatus.Inactive;
       await userService.updateUser(user._id, { status: newStatus });
-      fetchUsers(true);
+      await fetchUsers(true);
+      showNotification(`${roleText} "${user.name}" ${isActivating ? "activated" : "deactivated"} successfully!`, "success");
       closeConfirm();
     } catch (err) {
       console.error("Error updating user status:", err);
+      showNotification(`Failed to update ${roleText.toLowerCase()} status.`, "error");
     } finally {
       setStatusUpdatingId(null);
+      setConfirmLoading(false);
     }
   };
 
   const handleDeleteUser = async (user: User) => {
+    const roleText = user.role === UserRole.Admin ? "Admin" : "User";
+
     const isConfirmed = await confirm({
-      title: "Delete User",
-      message: `Are you sure you want to permanently delete user "${user.name}"? This action cannot be undone.`,
+      title: `Delete ${roleText}`,
+      message: `Are you sure you want to permanently delete ${roleText.toLowerCase()} "${user.name}"? This action cannot be undone.`,
       confirmText: "Delete",
       severity: "error",
     });
@@ -156,10 +164,11 @@ const UsersPage = () => {
       setDeletingId(user._id);
       await userService.deleteUser(user._id);
       await fetchUsers(true);
+      showNotification(`${roleText} "${user.name}" deleted permanently.`, "success");
       closeConfirm();
     } catch (err: any) {
       console.error("Error deleting user:", err);
-      alert(err.response?.data?.message || "Failed to delete user.");
+      showNotification(err.response?.data?.message || `Failed to delete ${roleText.toLowerCase()}.`, "error");
     } finally {
       setDeletingId(null);
       setConfirmLoading(false);

@@ -10,10 +10,10 @@ import {
   Select,
   MenuItem,
   Box,
-  Typography,
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import issueService, { IssuePriority, type Issue } from "../services/issueService";
+import { useNotificationStore } from "../store/useNotificationStore";
 
 interface CreateIssueModalProps {
   open: boolean;
@@ -32,7 +32,7 @@ const CreateIssueModal = ({
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<number>(IssuePriority.Low);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const showNotification = useNotificationStore((state) => state.showNotification);
 
   const isEdit = !!issue;
 
@@ -51,38 +51,38 @@ const CreateIssueModal = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description) {
-      setError("Title and description are required.");
+      showNotification("Title and description are required.", "error");
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
       if (isEdit && issue) {
         await issueService.updateIssue(issue._id, {
           title,
           description,
           priority: priority as any,
         });
+        showNotification("Issue updated successfully!", "success");
       } else {
         await issueService.createIssue({
           title,
           description,
           priority: priority as any,
         });
+        showNotification("Issue created successfully!", "success");
       }
       handleClose();
       onSuccess();
     } catch (err: any) {
       console.error(`Error ${isEdit ? "updating" : "creating"} issue:`, err);
-      setError(err.response?.data?.message || `Failed to ${isEdit ? "update" : "create"} issue.`);
+      showNotification(err.response?.data?.message || `Failed to ${isEdit ? "update" : "create"} issue.`, "error");
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setError(null);
     onClose();
   };
 
@@ -102,11 +102,6 @@ const CreateIssueModal = ({
       <form onSubmit={handleSubmit}>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 1 }}>
-            {error && (
-              <Typography color="error" variant="body2">
-                {error}
-              </Typography>
-            )}
             <TextField
               label="Title"
               placeholder="What's the problem?"

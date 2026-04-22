@@ -10,6 +10,7 @@ import UsersPage from "./pages/UsersPage";
 import { useAuthStore } from "./store/useAuthStore";
 import { UserRole } from "./services/userService";
 import GlobalConfirmDialog from "./components/GlobalConfirmDialog";
+import Notification from "./components/Notification";
 
 const AppContent = () => {
   const mode = useThemeStore((state) => state.mode);
@@ -37,6 +38,7 @@ const AppContent = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <GlobalConfirmDialog />
+      <Notification />
       <BrowserRouter>
         <Routes>
           <Route
