@@ -96,6 +96,7 @@ const ConfirmationDialog = ({
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3, justifyContent: "center", gap: 1 }}>
         <Button
+          variant="outlined"
           onClick={onClose}
           disabled={loading}
           sx={{
@@ -103,6 +104,12 @@ const ConfirmationDialog = ({
             fontWeight: 600,
             textTransform: "none",
             color: "text.secondary",
+            borderColor: "divider",
+            borderRadius: "10px",
+            "&:hover": {
+              borderColor: "text.disabled",
+              bgcolor: "action.hover",
+            },
           }}
         >
           {cancelText}

@@ -417,22 +417,24 @@ const UsersPage = () => {
                         {user.email}
                       </TableCell>
                       <TableCell>
-                        <Chip
-                          label={roleMap[user.role]}
-                          color={roleColors[roleMap[user.role]] as any}
-                          size="small"
-                          sx={{
-                            fontWeight: 600,
-                            borderRadius: "6px",
-                            bgcolor: (t: any) =>
-                              `${t.palette[roleColors[roleMap[user.role]] || "primary"].main}15`,
-                            color: (t: any) =>
-                              t.palette[
-                                roleColors[roleMap[user.role]] || "primary"
-                              ].main,
-                            border: "none",
-                          }}
-                        />
+                        {(() => {
+                          const roleName = roleMap[user.role] || "User";
+                          const colorKey = roleColors[roleName] || "primary";
+                          return (
+                            <Chip
+                              label={roleName}
+                              size="small"
+                              sx={{
+                                fontWeight: 600,
+                                borderRadius: "6px",
+                                bgcolor: (t: any) =>
+                                  `${t.palette[colorKey].main}15`,
+                                color: (t: any) => t.palette[colorKey].main,
+                                border: "none",
+                              }}
+                            />
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         <Box
