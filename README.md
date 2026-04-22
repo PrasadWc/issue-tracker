@@ -11,9 +11,9 @@ A modern, high-performance Issue Tracking system designed for efficiency and cla
 ## ✨ Key Features
 
 - **🔐 Secure Authentication:** JWT-based authentication with Bcrypt password hashing and protected routes.
-- **👥 Role-Based Access Control:** Manage users with specific roles (Admin, Manager, Staff) and tailored permissions.
+- **👥 Role-Based Access Control:** Manage users with specific roles (Admin, User) and tailored permissions.
 - **📊 Premium Dashboard:** A sleek, responsive UI built with **Material UI** and **Framer Motion** for smooth transitions.
-- **📍 Detailed Issue Management:** Create, update, and monitor issues with fields for location, priority, status, and image attachments.
+- **📍 Detailed Issue Management:** Create, update, and monitor issues with fields for title, description priority, and status.
 - **🌗 Light/Dark Mode:** Fully integrated theme toggling for a comfortable user experience.
 - **⚡ Optimized Performance:** Server-side pagination and efficient data fetching via Axios and Zustand.
 - **📱 Responsive Design:** Fully mobile-friendly layout that works across all devices.
@@ -78,6 +78,12 @@ npm run dev
 ```bash
 cd ../frontend
 npm install
+```
+
+Create a `.env` file in the `frontend` directory:
+
+```env
+VITE_API_BASE_URL = your backend link (Ex: http://localhost:5001/api)
 ```
 
 Start the frontend development server:
