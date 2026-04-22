@@ -28,6 +28,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import EditIcon from "@mui/icons-material/Edit";
 import { useState, useEffect } from "react";
 import issueService, {
   type Issue,
@@ -86,6 +87,7 @@ const IssuesPage = () => {
     "all",
   );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [issueToEdit, setIssueToEdit] = useState<Issue | null>(null);
   const confirm = useConfirmStore((state) => state.confirm);
   const setConfirmLoading = useConfirmStore((state) => state.setLoading);
   const closeConfirm = useConfirmStore((state) => state.onCancel);
@@ -228,6 +230,16 @@ const IssuesPage = () => {
       setLoading(false);
       setConfirmLoading(false);
     }
+  };
+
+  const handleOpenEditModal = (issue: Issue) => {
+    setIssueToEdit(issue);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsCreateModalOpen(false);
+    setIssueToEdit(null);
   };
 
   const handleChangePage = (_event: unknown, newPage: number) => {
@@ -584,13 +596,22 @@ const IssuesPage = () => {
                       </TableCell>
                       {viewTab === "reported" && (
                         <TableCell align="right">
-                          <IconButton
-                            color="error"
-                            size="small"
-                            onClick={() => handleConfirmDelete(issue)}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
+                          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
+                            <IconButton
+                              color="primary"
+                              size="small"
+                              onClick={() => handleOpenEditModal(issue)}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              color="error"
+                              size="small"
+                              onClick={() => handleConfirmDelete(issue)}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
                         </TableCell>
                       )}
                     </TableRow>
@@ -614,8 +635,9 @@ const IssuesPage = () => {
 
       <CreateIssueModal
         open={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={handleCloseModal}
         onSuccess={() => fetchIssues(true)}
+        issue={issueToEdit}
       />
 
       {/* Global Confirmation Dialog is handled in App.tsx */}

@@ -12,25 +12,41 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
-import issueService, { IssuePriority } from "../services/issueService";
+import { useState, useEffect } from "react";
+import issueService, { IssuePriority, type Issue } from "../services/issueService";
 
 interface CreateIssueModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  issue?: Issue | null;
 }
 
 const CreateIssueModal = ({
   open,
   onClose,
   onSuccess,
+  issue,
 }: CreateIssueModalProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<number>(IssuePriority.Low);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isEdit = !!issue;
+
+  useEffect(() => {
+    if (issue) {
+      setTitle(issue.title);
+      setDescription(issue.description);
+      setPriority(issue.priority);
+    } else {
+      setTitle("");
+      setDescription("");
+      setPriority(IssuePriority.Low);
+    }
+  }, [issue, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,25 +58,30 @@ const CreateIssueModal = ({
     try {
       setLoading(true);
       setError(null);
-      await issueService.createIssue({
-        title,
-        description,
-        priority: priority as any,
-      });
+      if (isEdit && issue) {
+        await issueService.updateIssue(issue._id, {
+          title,
+          description,
+          priority: priority as any,
+        });
+      } else {
+        await issueService.createIssue({
+          title,
+          description,
+          priority: priority as any,
+        });
+      }
       handleClose();
       onSuccess();
     } catch (err: any) {
-      console.error("Error creating issue:", err);
-      setError(err.response?.data?.message || "Failed to create issue.");
+      console.error(`Error ${isEdit ? "updating" : "creating"} issue:`, err);
+      setError(err.response?.data?.message || `Failed to ${isEdit ? "update" : "create"} issue.`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setTitle("");
-    setDescription("");
-    setPriority(IssuePriority.Low);
     setError(null);
     onClose();
   };
@@ -76,7 +97,7 @@ const CreateIssueModal = ({
       }}
     >
       <DialogTitle sx={{ fontWeight: 700, pb: 0 }}>
-        Create New Issue
+        {isEdit ? "Edit Issue" : "Create New Issue"}
       </DialogTitle>
       <form onSubmit={handleSubmit}>
         <DialogContent>
@@ -146,7 +167,7 @@ const CreateIssueModal = ({
               boxShadow: (t) => `0 4px 12px ${t.palette.primary.main}44`,
             }}
           >
-            {loading ? "Creating..." : "Create Issue"}
+            {loading ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Issue" : "Create Issue")}
           </Button>
         </DialogActions>
       </form>
