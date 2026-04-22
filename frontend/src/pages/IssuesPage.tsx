@@ -29,6 +29,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import EditIcon from "@mui/icons-material/Edit";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { useState, useEffect } from "react";
 import issueService, {
   type Issue,
@@ -70,7 +71,9 @@ const IssuesPage = () => {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const showNotification = useNotificationStore((state) => state.showNotification);
+  const showNotification = useNotificationStore(
+    (state) => state.showNotification,
+  );
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [assigningId, setAssigningId] = useState<string | null>(null);
@@ -89,6 +92,9 @@ const IssuesPage = () => {
   );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [issueToEdit, setIssueToEdit] = useState<Issue | null>(null);
+  const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(
+    null,
+  );
   const confirm = useConfirmStore((state) => state.confirm);
   const setConfirmLoading = useConfirmStore((state) => state.setLoading);
   const closeConfirm = useConfirmStore((state) => state.onCancel);
@@ -131,7 +137,10 @@ const IssuesPage = () => {
       setTotal(res.total);
     } catch (err: any) {
       console.error("Error fetching issues:", err);
-      showNotification("Failed to fetch issues. Please check your connectivity.", "error");
+      showNotification(
+        "Failed to fetch issues. Please check your connectivity.",
+        "error",
+      );
     } finally {
       setLoading(false);
     }
@@ -224,7 +233,10 @@ const IssuesPage = () => {
       });
       handleCloseStatusMenu();
       await fetchIssues(true);
-      showNotification(`Issue status updated to ${statusMap[newStatus || 0]}`, "success");
+      showNotification(
+        `Issue status updated to ${statusMap[newStatus || 0]}`,
+        "success",
+      );
       if (newStatus === IssueStatus.Closed) closeConfirm();
     } catch (err) {
       console.error("Error updating status:", err);
@@ -243,6 +255,78 @@ const IssuesPage = () => {
   const handleCloseModal = () => {
     setIsCreateModalOpen(false);
     setIssueToEdit(null);
+  };
+
+  const handleOpenExportMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setExportMenuAnchor(event.currentTarget);
+  };
+
+  const handleCloseExportMenu = () => {
+    setExportMenuAnchor(null);
+  };
+
+  const downloadFile = (data: string, fileName: string, type: string) => {
+    const blob = new Blob([data], { type });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const exportToCSV = () => {
+    handleCloseExportMenu();
+    if (issues.length === 0) {
+      showNotification("No issues to export.", "warning");
+      return;
+    }
+
+    const headers = [
+      "Title",
+      "Description",
+      "Status",
+      "Priority",
+      "Assignee",
+      "Reporter",
+      "Created At",
+    ];
+    const csvData = issues.map((issue) => [
+      `"${issue.title}"`,
+      `"${issue.description}"`,
+      statusMap[issue.status],
+      priorityMap[issue.priority],
+      issue.assignee && typeof issue.assignee === "object"
+        ? issue.assignee.name
+        : "Unassigned",
+      issue.createdBy && typeof issue.createdBy === "object"
+        ? issue.createdBy.name
+        : "Unknown",
+      new Date(issue.createdAt).toLocaleString(),
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map((row) => row.join(",")),
+    ].join("\n");
+    downloadFile(csvContent, `issues_export_${Date.now()}.csv`, "text/csv");
+    showNotification("Issues exported to CSV successfully!", "success");
+  };
+
+  const exportToJSON = () => {
+    handleCloseExportMenu();
+    if (issues.length === 0) {
+      showNotification("No issues to export.", "warning");
+      return;
+    }
+
+    const jsonData = JSON.stringify(issues, null, 2);
+    downloadFile(
+      jsonData,
+      `issues_export_${Date.now()}.json`,
+      "application/json",
+    );
+    showNotification("Issues exported to JSON successfully!", "success");
   };
 
   const handleChangePage = (_event: unknown, newPage: number) => {
@@ -275,20 +359,58 @@ const IssuesPage = () => {
             Manage and track all reported bugs and tasks.
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setIsCreateModalOpen(true)}
-          sx={{
-            borderRadius: "10px",
-            height: 48,
-            px: 3,
-            fontWeight: 600,
-            boxShadow: (t) => `0 8px 16px ${t.palette.primary.main}33`,
-          }}
-        >
-          Create Issue
-        </Button>
+        <Box sx={{ display: "flex", gap: 1.5 }}>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadIcon />}
+            onClick={handleOpenExportMenu}
+            sx={{
+              borderRadius: "10px",
+              height: 48,
+              px: 3,
+              fontWeight: 600,
+              textTransform: "none",
+            }}
+          >
+            Export
+          </Button>
+          <Menu
+            anchorEl={exportMenuAnchor}
+            open={Boolean(exportMenuAnchor)}
+            onClose={handleCloseExportMenu}
+            PaperProps={{
+              sx: {
+                borderRadius: "12px",
+                mt: 1,
+                boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                minWidth: 160,
+              },
+            }}
+          >
+            <MenuItem onClick={exportToCSV} sx={{ py: 1.5, fontWeight: 500 }}>
+              Export to CSV
+            </MenuItem>
+            <MenuItem onClick={exportToJSON} sx={{ py: 1.5, fontWeight: 500 }}>
+              Export to JSON
+            </MenuItem>
+          </Menu>
+
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setIsCreateModalOpen(true)}
+            sx={{
+              borderRadius: "10px",
+              height: 48,
+              px: 3,
+              fontWeight: 600,
+              textTransform: "none",
+              boxShadow: (t) => `0 8px 16px ${t.palette.primary.main}33`,
+            }}
+          >
+            Create Issue
+          </Button>
+        </Box>
       </Box>
 
       {/* Tabs Section */}
@@ -587,7 +709,13 @@ const IssuesPage = () => {
                       </TableCell>
                       {viewTab === "reported" && (
                         <TableCell align="right">
-                          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              gap: 0.5,
+                            }}
+                          >
                             <IconButton
                               color="primary"
                               size="small"
