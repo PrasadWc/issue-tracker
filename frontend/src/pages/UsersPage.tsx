@@ -33,6 +33,7 @@ import userService, {
 import CreateUserModal from "../components/CreateUserModal";
 import { useConfirmStore } from "../store/useConfirmStore";
 import { useNotificationStore } from "../store/useNotificationStore";
+import { useAuthStore } from "../store/useAuthStore";
 
 const statusMap: Record<number, string> = {
   [UserStatus.Active]: "Active",
@@ -53,6 +54,7 @@ const roleColors: Record<
 };
 
 const UsersPage = () => {
+  const currentUser = useAuthStore((state) => state.user);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -457,64 +459,79 @@ const UsersPage = () => {
                         </Box>
                       </TableCell>
                       <TableCell align="right" sx={{ width: 180, pr: 1 }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            gap: 0.5,
-                          }}
-                        >
-                          <Button
-                            size="small"
-                            color={
-                              user.status === UserStatus.Active
-                                ? "error"
-                                : "primary"
-                            }
-                            variant="text"
-                            onClick={() => handleToggleStatus(user)}
-                            disabled={statusUpdatingId === user._id}
+                        {user._id !== currentUser?._id ? (
+                          <Box
                             sx={{
-                              textTransform: "none",
-                              fontWeight: 600,
-                              borderRadius: "8px",
-                              "&:hover": {
-                                bgcolor: (t) =>
-                                  user.status === UserStatus.Active
-                                    ? `${t.palette.error.main}15`
-                                    : `${t.palette.primary.main}15`,
-                              },
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              gap: 0.5,
                             }}
                           >
-                            {statusUpdatingId === user._id
-                              ? "..."
-                              : user.status === UserStatus.Active
-                                ? "Deactivate"
-                                : "Activate"}
-                          </Button>
-                          <Button
-                            size="small"
-                            color="error"
-                            variant="text"
-                            onClick={() => handleDeleteUser(user)}
-                            disabled={deletingId === user._id}
+                            <Button
+                              size="small"
+                              color={
+                                user.status === UserStatus.Active
+                                  ? "error"
+                                  : "primary"
+                              }
+                              variant="text"
+                              onClick={() => handleToggleStatus(user)}
+                              disabled={statusUpdatingId === user._id}
+                              sx={{
+                                textTransform: "none",
+                                fontWeight: 600,
+                                borderRadius: "8px",
+                                "&:hover": {
+                                  bgcolor: (t) =>
+                                    user.status === UserStatus.Active
+                                      ? `${t.palette.error.main}15`
+                                      : `${t.palette.primary.main}15`,
+                                },
+                              }}
+                            >
+                              {statusUpdatingId === user._id
+                                ? "..."
+                                : user.status === UserStatus.Active
+                                  ? "Deactivate"
+                                  : "Activate"}
+                            </Button>
+                            <Button
+                              size="small"
+                              color="error"
+                              variant="text"
+                              onClick={() => handleDeleteUser(user)}
+                              disabled={deletingId === user._id}
+                              sx={{
+                                minWidth: 40,
+                                borderRadius: "8px",
+                                height: 32,
+                                "&:hover": {
+                                  bgcolor: "error.main",
+                                  color: "white",
+                                },
+                              }}
+                            >
+                              {deletingId === user._id ? (
+                                <CircularProgress size={16} color="inherit" />
+                              ) : (
+                                <DeleteIcon sx={{ fontSize: 18 }} />
+                              )}
+                            </Button>
+                          </Box>
+                        ) : (
+                          <Typography
+                            variant="caption"
                             sx={{
-                              minWidth: 40,
-                              borderRadius: "8px",
-                              height: 32,
-                              "&:hover": {
-                                bgcolor: "error.main",
-                                color: "white",
-                              },
+                              color: "text.disabled",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              letterSpacing: "1px",
+                              pr: 2,
                             }}
                           >
-                            {deletingId === user._id ? (
-                              <CircularProgress size={16} color="inherit" />
-                            ) : (
-                              <DeleteIcon sx={{ fontSize: 18 }} />
-                            )}
-                          </Button>
-                        </Box>
+                            You
+                          </Typography>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
