@@ -30,6 +30,7 @@ import AddIcon from "@mui/icons-material/Add";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import EditIcon from "@mui/icons-material/Edit";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { useState, useEffect } from "react";
 import issueService, {
   type Issue,
@@ -38,6 +39,7 @@ import issueService, {
 } from "../services/issueService";
 import { useAuthStore } from "../store/useAuthStore";
 import CreateIssueModal from "../components/CreateIssueModal";
+import IssueDetailModal from "../components/IssueDetailModal";
 import { useConfirmStore } from "../store/useConfirmStore";
 import { useNotificationStore } from "../store/useNotificationStore";
 
@@ -92,6 +94,10 @@ const IssuesPage = () => {
   );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [issueToEdit, setIssueToEdit] = useState<Issue | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedIssueDetail, setSelectedIssueDetail] = useState<Issue | null>(
+    null,
+  );
   const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(
     null,
   );
@@ -557,27 +563,28 @@ const IssuesPage = () => {
                 }}
               >
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                  <TableCell sx={{ fontWeight: 600, minWidth: 300 }}>
+                    Title
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, minWidth: 100 }}>
+                    Description
+                  </TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Priority</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Created By</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Assignee</TableCell>
-                  {viewTab === "reported" && (
-                    <TableCell sx={{ fontWeight: 600 }} align="right">
-                      Actions
-                    </TableCell>
-                  )}
+                  <TableCell
+                    sx={{ fontWeight: 600, width: 120 }}
+                    align="center"
+                  >
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading && issues.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={viewTab === "reported" ? 7 : 6}
-                      align="center"
-                      sx={{ py: 3 }}
-                    >
+                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                       <CircularProgress size={24} sx={{ mb: 1 }} />
                       <Typography variant="body2" color="text.secondary">
                         Loading issues...
@@ -586,11 +593,7 @@ const IssuesPage = () => {
                   </TableRow>
                 ) : issues.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={viewTab === "reported" ? 7 : 6}
-                      align="center"
-                      sx={{ py: 3 }}
-                    >
+                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                       <Typography variant="body2" color="text.secondary">
                         No issues found.
                       </Typography>
@@ -608,15 +611,21 @@ const IssuesPage = () => {
                       </TableCell>
                       <TableCell
                         sx={{
-                          maxWidth: 400,
-                          overflow: "visible",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "normal",
+                          maxWidth: 200,
                           color: "text.secondary",
-                          wordWrap: "break-word",
                         }}
                       >
-                        {issue.description}
+                        <Typography
+                          variant="body2"
+                          noWrap
+                          sx={{
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "block",
+                          }}
+                        >
+                          {issue.description}
+                        </Typography>
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -707,32 +716,44 @@ const IssuesPage = () => {
                           </Button>
                         )}
                       </TableCell>
-                      {viewTab === "reported" && (
-                        <TableCell align="right">
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "flex-end",
-                              gap: 0.5,
+                      <TableCell align="center" sx={{ width: 120 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <IconButton
+                            color="info"
+                            size="small"
+                            onClick={() => {
+                              setSelectedIssueDetail(issue);
+                              setIsDetailModalOpen(true);
                             }}
                           >
-                            <IconButton
-                              color="primary"
-                              size="small"
-                              onClick={() => handleOpenEditModal(issue)}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              color="error"
-                              size="small"
-                              onClick={() => handleConfirmDelete(issue)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </TableCell>
-                      )}
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                          {viewTab === "reported" && (
+                            <>
+                              <IconButton
+                                color="primary"
+                                size="small"
+                                onClick={() => handleOpenEditModal(issue)}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                color="error"
+                                size="small"
+                                onClick={() => handleConfirmDelete(issue)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </>
+                          )}
+                        </Box>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -790,6 +811,15 @@ const IssuesPage = () => {
           Complete
         </MenuItem>
       </Menu>
+      <IssueDetailModal
+        open={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        issue={selectedIssueDetail}
+        statusMap={statusMap}
+        priorityMap={priorityMap}
+        statusColors={statusColors}
+        priorityColors={priorityColors}
+      />
     </Box>
   );
 };
